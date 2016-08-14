@@ -30,6 +30,9 @@ values."
      html
      yaml
      emacs-lisp
+     common-lisp
+     elixir
+     go
      git
      markdown
      org
