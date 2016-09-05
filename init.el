@@ -31,6 +31,7 @@ values."
      yaml
      emacs-lisp
      common-lisp
+     scheme
      elixir
      go
      git
