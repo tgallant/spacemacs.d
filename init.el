@@ -238,6 +238,7 @@ values."
    ;; delete only whitespace for changed lines or `nil' to disable cleanup.
    ;; (default nil)
    dotspacemacs-whitespace-cleanup nil
+   require-final-newline t
    indent-tabs-mode nil
    js2-basic-offset 2
    js2-strict-missing-semi-warning nil
