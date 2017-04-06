@@ -29,14 +29,15 @@ values."
      react
      html
      yaml
+     (go :variables go-tab-width 2)
      emacs-lisp
      common-lisp
      scheme
+     erlang
      elixir
-     go
      git
      markdown
-     org
+     (org :variables org-enable-github-support t)
      (shell :variables
             shell-default-shell 'ansi-term
             shell-default-height 30
