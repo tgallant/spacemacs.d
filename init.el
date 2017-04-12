@@ -36,6 +36,7 @@ values."
      erlang
      elixir
      git
+     github
      markdown
      (org :variables org-enable-github-support t)
      (shell :variables
