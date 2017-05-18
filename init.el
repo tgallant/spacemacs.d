@@ -25,6 +25,7 @@ values."
      ;; ----------------------------------------------------------------
      auto-completion
      better-defaults
+     csv
      javascript
      react
      html
