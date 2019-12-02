@@ -26,7 +26,6 @@ values."
      ;; ----------------------------------------------------------------
      auto-completion
      better-defaults
-     multiple-cursors
      csv
      docker
      kubernetes
