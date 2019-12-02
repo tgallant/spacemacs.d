@@ -26,6 +26,7 @@ values."
      ;; ----------------------------------------------------------------
      auto-completion
      better-defaults
+     multiple-cursors
      csv
      docker
      kubernetes
@@ -34,7 +35,6 @@ values."
      restclient
      html
      yaml
-     (go :variables go-tab-width 2)
      emacs-lisp
      scheme
      erlang
