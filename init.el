@@ -261,9 +261,7 @@ It is called immediately after `dotspacemacs/init', before layer configuration
 executes.
  This function is mostly useful for variables that need to be set
 before packages are loaded. If you are unsure, you should try in setting them in
-`dotspacemacs/user-config' first."
-  (setq initial-frame-alist '((top . 30) (left . 30) (width . 125) (height . 45)))
-  )
+`dotspacemacs/user-config' first.")
 
 (defun dotspacemacs/user-config ()
   "Configuration function for user code.
@@ -272,9 +270,7 @@ layers configuration.
 This is the place where most of your configurations should be done. Unless it is
 explicitly specified that a variable should be set before a package is loaded,
 you should place your code here."
-  (with-eval-after-load 'org
-    (setq org-agenda-files '("~/Documents"))
-    ))
+  (org-babel-load-file "~/.spacemacs.d/config.org"))
 
 ;; Do not write anything past this comment. This is where Emacs will
 ;; auto-generate custom variable definitions.

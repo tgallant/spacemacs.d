@@ -1,0 +1,11 @@
+* Emacs Configuration
+** General
+*** Set Window Size
+#+begin_src emacs-lisp
+  (setq initial-frame-alist '((top . 30) (left . 30) (width . 125) (height . 45)))
+#+end_src
+** Org
+#+begin_src emacs-lisp
+  (with-eval-after-load 'org
+    (setq org-agenda-files '("~/org")))
+#+end_src
