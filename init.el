@@ -43,7 +43,9 @@ values."
          go-format-before-save t
          godoc-at-point-function 'godoc-gogetdoc)
      (python :variables python-test-runner 'pytest)
-     (org :variables org-enable-github-support t)
+     (org :variables
+          org-enable-github-support t
+          org-hide-leading-stars t)
      (shell :variables
             shell-default-shell 'eshell
             shell-default-height 30
