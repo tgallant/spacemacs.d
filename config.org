@@ -11,6 +11,15 @@
   (with-eval-after-load 'org
     (setq org-agenda-files '("~/org")))
 #+end_src
+*** Add project TODOs to Agenda
+#+begin_src emacs-lisp
+  (with-eval-after-load 'org-agenda
+    (require 'org-projectile)
+    (mapcar '(lambda (file)
+               (when (file-exists-p file)
+                 (push file org-agenda-files)))
+            (org-projectile-todo-files)))
+#+end_src
 ** Magit
 *** Undo last commit
 #+begin_src emacs-lisp
