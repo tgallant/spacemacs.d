@@ -5,7 +5,19 @@
   (setq initial-frame-alist '((top . 30) (left . 30) (width . 125) (height . 45)))
 #+end_src
 ** Org
+*** Basic
+**** Set Base Org Folder
 #+begin_src emacs-lisp
   (with-eval-after-load 'org
     (setq org-agenda-files '("~/org")))
+#+end_src
+** Magit
+*** Undo last commit
+#+begin_src emacs-lisp
+  (defun undo-last-commit ()
+    (interactive)
+    (magit-reset-soft "HEAD^"))
+
+  (transient-append-suffix 'magit-reset "w"
+    '("u" "undo" undo-last-commit))
 #+end_src
