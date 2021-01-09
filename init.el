@@ -37,7 +37,6 @@ values."
      github
      markdown
      nginx
-     restclient
      (go :variables
          go-tab-width 2
          go-format-before-save t
@@ -45,7 +44,8 @@ values."
      (python :variables python-test-runner 'pytest)
      (org :variables
           org-enable-github-support t
-          org-hide-leading-stars t)
+          org-hide-leading-stars t
+          org-enable-verb-support t)
      (shell :variables
             shell-default-shell 'eshell
             shell-default-height 30
