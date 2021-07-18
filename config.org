@@ -4,6 +4,17 @@
 #+begin_src emacs-lisp
   (setq initial-frame-alist '((top . 30) (left . 30) (width . 125) (height . 45)))
 #+end_src
+*** Info Path
+#+begin_src emacs-lisp
+  (defun add-local-info-dir ()
+    (info-initialize)
+    (add-to-list 'Info-directory-list "~/info"))
+
+  (eval-after-load "info"
+    '(progn
+       (if (file-directory-p "~/info")
+           (add-dir-local-variable))))
+#+end_src
 ** Org
 *** Basic
 **** Set Base Org Folder
