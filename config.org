@@ -15,6 +15,15 @@
        (if (file-directory-p "~/info")
            (add-dir-local-variable))))
 #+end_src
+*** Tabs/Spaces
+#+begin_src emacs-lisp
+  (defun handle-tab-exceptions ()
+    (if (and buffer-file-name
+             (not (string-equal mode-name "Makefile")))
+        (setq indent-tabs-mode nil)))
+
+  (add-hook 'find-file-hook 'handle-tab-exceptions)
+#+end_src
 ** Org
 *** Basic
 **** Set Base Org Folder
