@@ -46,7 +46,22 @@
   (defun undo-last-commit ()
     (interactive)
     (magit-reset-soft "HEAD^"))
-
+  
   (transient-append-suffix 'magit-reset "w"
     '("u" "undo" undo-last-commit))
+#+end_src
+*** Stage and commit each unstaged file
+#+begin_src emacs-lisp
+  (defun stage-and-commit-file (file)
+    (magit-stage-file file)
+    (magit-run-git "commit" "-m" file))
+  
+  (defun commit-each-unstaged-file ()
+    "Stage and commit each file returned by magit-unstaged-files"
+    (interactive)
+    (dolist (file (magit-unstaged-files))
+      (stage-and-commit-file file)))
+  
+  (transient-append-suffix 'magit-commit "c"
+    '("E" "Commit each unstaged file" commit-each-unstaged-file))
 #+end_src
