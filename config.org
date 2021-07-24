@@ -24,6 +24,10 @@
 
   (add-hook 'find-file-hook 'handle-tab-exceptions)
 #+end_src
+*** Importmagic
+#+begin_src emacs-lisp
+  (setq importmagic-python-interpreter "~/.pyenv/shims/python")
+#+end_src
 ** Org
 *** Basic
 **** Set Base Org Folder
