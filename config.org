@@ -69,3 +69,18 @@
   (transient-append-suffix 'magit-commit "c"
     '("E" "Commit each unstaged file" commit-each-unstaged-file))
 #+end_src
+*** Replay commits on top of branch
+#+begin_src emacs-lisp
+  (defun replay-commits-on-branch (commit)
+    "Replay the commits starting at the point on top of another branch"
+    (interactive (list (magit-reset-read-branch-or-commit
+                        (concat (magit--propertize-face "Hard" 'bold)
+                                " reset %s to"))))
+    (let ((parent (car (magit-commit-parents (magit-commit-at-point)))))
+      (magit-rebase-edit-commit parent '())
+      (magit-reset-hard commit)
+      (magit-rebase-continue)))
+  
+  (transient-append-suffix 'magit-rebase "s"
+    '("b" "Replay commits on branch" replay-commits-on-branch))
+#+end_src
