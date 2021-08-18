@@ -44,10 +44,11 @@ This function should only modify configuration layer settings."
      multiple-cursors
      treemacs
      helm
-     lsp
      sql
      docker
      javascript
+     typescript
+     graphviz
      html
      yaml
      emacs-lisp
@@ -555,71 +556,16 @@ This function is called at the very end of Spacemacs initialization."
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(ansi-color-faces-vector
-   [default bold shadow italic underline success warning error])
- '(ansi-color-names-vector
-   ["gray35" "#ff8059" "#44bc44" "#d0bc00" "#2fafff" "#feacd0" "#00d3d0" "gray65"])
- '(awesome-tray-mode-line-active-color "#2fafff")
- '(awesome-tray-mode-line-inactive-color "#323232")
- '(evil-want-Y-yank-to-eol nil)
- '(exwm-floating-border-color "#646464")
- '(flymake-error-bitmap '(flymake-double-exclamation-mark modus-themes-fringe-red))
- '(flymake-note-bitmap '(exclamation-mark modus-themes-fringe-cyan))
- '(flymake-warning-bitmap '(exclamation-mark modus-themes-fringe-yellow))
- '(highlight-tail-colors '(("#2f4a00" . 0) ("#00415e" . 20)))
- '(hl-todo-keyword-faces
-   '(("HOLD" . "#c0c530")
-     ("TODO" . "#feacd0")
-     ("NEXT" . "#b6a0ff")
-     ("THEM" . "#f78fe7")
-     ("PROG" . "#00d3d0")
-     ("OKAY" . "#4ae2f0")
-     ("DONT" . "#70b900")
-     ("FAIL" . "#ff8059")
-     ("BUG" . "#ff8059")
-     ("DONE" . "#44bc44")
-     ("NOTE" . "#d3b55f")
-     ("KLUDGE" . "#d0bc00")
-     ("HACK" . "#d0bc00")
-     ("TEMP" . "#ffcccc")
-     ("FIXME" . "#ff9077")
-     ("XXX+" . "#ef8b50")
-     ("REVIEW" . "#6ae4b9")
-     ("DEPRECATED" . "#bfd9ff")))
- '(ibuffer-deletion-face 'modus-themes-mark-del)
- '(ibuffer-filter-group-name-face 'modus-themes-pseudo-header)
- '(ibuffer-marked-face 'modus-themes-mark-sel)
- '(ibuffer-title-face 'default)
- '(org-src-block-faces 'nil)
+ '(custom-safe-themes
+   '("bffa9739ce0752a37d9b1eee78fc00ba159748f50dc328af4be661484848e476" "e6df46d5085fde0ad56a46ef69ebb388193080cc9819e2d6024c9c6e27388ba9" "d9646b131c4aa37f01f909fbdd5a9099389518eb68f25277ed19ba99adeb7279" "fa2b58bb98b62c3b8cf3b6f02f058ef7827a8e497125de0254f56e373abee088" "51ec7bfa54adf5fff5d466248ea6431097f5a18224788d0bd7eb1257a4f7b773" "7f1d414afda803f3244c6fb4c2c64bea44dac040ed3731ec9d75275b9e831fe5" "2809bcb77ad21312897b541134981282dc455ccd7c14d74cc333b6e549b824f3" "285d1bf306091644fb49993341e0ad8bafe57130d9981b680c1dbd974475c5c7" default))
+ '(evil-want-Y-yank-to-eol t)
+ '(helm-ag-base-command "rg --vimgrep --no-heading --smart-case")
  '(package-selected-packages
-   '(doom-modeline shrink-path ijanet janet-mode inf-janet quelpa-use-package quelpa toml-mode ron-mode racer rust-mode helm-gtags ggtags flycheck-rust dap-mode bui counsel-gtags counsel swiper ivy cargo zenburn-theme yasnippet-snippets yapfify yaml-mode xterm-color ws-butler writeroom-mode winum which-key web-mode web-beautify vterm volatile-highlights vi-tilde-fringe verb uuidgen use-package unfill undo-tree treemacs-projectile treemacs-persp treemacs-magit treemacs-icons-dired treemacs-evil toc-org terminal-here tagedit symon symbol-overlay string-inflection sql-indent sphinx-doc spaceline-all-the-icons solarized-theme smeargle slim-mode shell-pop scss-mode sass-mode restart-emacs rainbow-delimiters racket-mode pytest pyenv-mode py-isort pug-mode prettier-js popwin poetry pippel pipenv pip-requirements pcre2el password-generator paradox ox-gfm overseer orgit org-superstar org-rich-yank org-projectile org-present org-pomodoro org-mime org-download org-cliplink org-brain open-junk-file npm-mode nodejs-repl nginx-mode nameless mwim multi-term multi-line move-text monokai-theme mmm-mode markdown-toc magit-svn magit-section magit-gitflow macrostep lsp-treemacs lsp-python-ms lsp-pyright lsp-origami lorem-ipsum livid-mode live-py-mode link-hint json-navigator js2-refactor js-doc indent-guide importmagic impatient-mode hybrid-mode hungry-delete hl-todo highlight-parentheses highlight-numbers highlight-indentation helm-xref helm-themes helm-swoop helm-pydoc helm-purpose helm-projectile helm-org-rifle helm-org helm-mode-manager helm-make helm-lsp helm-ls-git helm-gitignore helm-git-grep helm-flx helm-descbinds helm-css-scss helm-company helm-c-yasnippet helm-ag grip-mode google-translate golden-ratio godoctor go-tag go-rename go-impl go-guru go-gen-test go-fill-struct go-eldoc gnuplot gitignore-templates github-search github-clone gitconfig-mode gitattributes-mode git-timemachine git-messenger git-link git-gutter-fringe+ gist gh-md fuzzy forge font-lock+ flycheck-pos-tip flycheck-package flycheck-elsa flx-ido fancy-battery eyebrowse expand-region evil-visualstar evil-visual-mark-mode evil-unimpaired evil-tutor evil-textobj-line evil-surround evil-org evil-numbers evil-nerd-commenter evil-mc evil-matchit evil-lisp-state evil-lion evil-indent-plus evil-iedit-state evil-goggles evil-exchange evil-escape evil-ediff evil-easymotion evil-collection evil-cleverparens evil-args evil-anzu eval-sexp-fu eshell-z eshell-prompt-extras esh-help erlang emr emmet-mode elisp-slime-nav editorconfig dumb-jump dotenv-mode dockerfile-mode docker dired-quick-sort diminish devdocs define-word cython-mode company-web company-go company-anaconda column-enforce-mode clean-aindent-mode centered-cursor-mode browse-at-remote blacken auto-yasnippet auto-highlight-symbol auto-compile aggressive-indent ace-link ace-jump-helm-line ac-ispell))
- '(pdf-view-midnight-colors '("#ffffff" . "#100f10"))
- '(vc-annotate-background nil)
- '(vc-annotate-background-mode nil)
- '(vc-annotate-color-map
-   '((20 . "#ff8059")
-     (40 . "#feacd0")
-     (60 . "#f78fe7")
-     (80 . "#ef8b50")
-     (100 . "#d0bc00")
-     (120 . "#c0c530")
-     (140 . "#f8dec0")
-     (160 . "#bfebe0")
-     (180 . "#44bc44")
-     (200 . "#70b900")
-     (220 . "#6ae4b9")
-     (240 . "#4ae2f0")
-     (260 . "#00d3d0")
-     (280 . "#c6eaff")
-     (300 . "#2fafff")
-     (320 . "#79a8ff")
-     (340 . "#00bcff")
-     (360 . "#b6a0ff")))
- '(vc-annotate-very-old-color nil)
- '(xterm-color-names
-   ["black" "#ff8059" "#44bc44" "#d0bc00" "#2fafff" "#feacd0" "#00d3d0" "gray65"])
- '(xterm-color-names-bright
-   ["gray35" "#ef8b50" "#70b900" "#c0c530" "#79a8ff" "#f78fe7" "#4ae2f0" "white"]))
+   '(graphviz-dot-mode typescript-mode import-js grizzl add-node-modules-path dap-mode bui zen-and-art-theme white-sand-theme underwater-theme ujelly-theme twilight-theme twilight-bright-theme twilight-anti-bright-theme toxi-theme tao-theme tangotango-theme tango-plus-theme tango-2-theme sunny-day-theme sublime-themes subatomic256-theme subatomic-theme spacegray-theme soothe-theme soft-stone-theme soft-morning-theme soft-charcoal-theme smyx-theme seti-theme ron-mode reverse-theme rebecca-theme railscasts-theme purple-haze-theme professional-theme planet-theme phoenix-dark-pink-theme phoenix-dark-mono-theme organic-green-theme omtose-phellack-theme oldlace-theme occidental-theme obsidian-theme noctilux-theme naquadah-theme mustang-theme monochrome-theme molokai-theme moe-theme modus-vivendi-theme modus-operandi-theme modus-themes minimal-theme material-theme majapahit-theme madhat2r-theme lush-theme lsp-ui lsp-treemacs lsp-python-ms lsp-pyright lsp-origami origami light-soap-theme kaolin-themes jbeans-theme jazz-theme ir-black-theme inkpot-theme heroku-theme hemisu-theme helm-lsp lsp-mode hc-zenburn-theme gruvbox-theme gruber-darker-theme grandshell-theme gotham-theme gandalf-theme flycheck-rust flycheck-pos-tip flatui-theme flatland-theme farmhouse-theme eziam-theme exotica-theme espresso-theme dracula-theme doom-themes django-theme darktooth-theme darkokai-theme darkmine-theme darkburn-theme dakrone-theme cyberpunk-theme color-theme-sanityinc-tomorrow color-theme-sanityinc-solarized clues-theme chocolate-theme autothemer cherry-blossom-theme busybee-theme bubbleberry-theme birds-of-paradise-plus-theme badwolf-theme apropospriate-theme anti-zenburn-theme ample-zen-theme ample-theme alect-themes afternoon-theme lv dockerfile-mode docker tablist docker-tramp spinner org-category-capture log4e gntp macrostep skewer-mode json-snatcher json-reformat parent-mode request haml-mode logito pcache flx transient anzu undo-tree web-completion-data tern bind-map bind-key elixir-mode pkg-info auto-complete popup multiple-cursors packed go-mode gitignore-mode s restclient-helm ob-restclient ob-http company-restclient restclient know-your-http-well hydra iedit smartparens highlight gh epl org-plus-contrib simple-httpd powerline org-mime vue-mode edit-indirect ssass-mode slime pos-tip rust-mode dash-functional f evil goto-chg flycheck company helm helm-core yasnippet avy marshal ht markdown-mode alert projectile magit magit-popup git-commit ghub async with-editor dash js2-mode vue-html-mode yaml-mode xterm-color ws-butler winum which-key web-mode web-beautify volatile-highlights vi-tilde-fringe uuidgen use-package unfill toml-mode toc-org tagedit spaceline smeargle slime-company slim-mode shell-pop scss-mode sass-mode restart-emacs rainbow-delimiters racer pug-mode popwin persp-mode pcre2el paradox ox-gfm orgit org-projectile org-present org-pomodoro org-download org-bullets open-junk-file ob-elixir neotree mwim multi-term move-text mmm-mode markdown-toc magit-gitflow magit-gh-pulls lorem-ipsum livid-mode linum-relative link-hint less-css-mode json-mode js2-refactor js-doc info+ indent-guide hungry-delete htmlize hl-todo highlight-parentheses highlight-numbers highlight-indentation hide-comnt help-fns+ helm-themes helm-swoop helm-projectile helm-mode-manager helm-make helm-gitignore helm-flx helm-descbinds helm-css-scss helm-company helm-c-yasnippet helm-ag google-translate golden-ratio go-guru go-eldoc gnuplot github-search github-clone github-browse-file gitconfig-mode gitattributes-mode git-timemachine git-messenger git-link gist gh-md geiser fuzzy flycheck-mix flycheck-credo flx-ido fill-column-indicator fancy-battery eyebrowse expand-region exec-path-from-shell evil-visualstar evil-visual-mark-mode evil-unimpaired evil-tutor evil-surround evil-search-highlight-persist evil-numbers evil-nerd-commenter evil-mc evil-matchit evil-magit evil-lisp-state evil-indent-plus evil-iedit-state evil-exchange evil-escape evil-ediff evil-args evil-anzu eval-sexp-fu eshell-z eshell-prompt-extras esh-help erlang emmet-mode elisp-slime-nav dumb-jump diminish define-word csv-mode company-web company-tern company-statistics company-go common-lisp-snippets column-enforce-mode coffee-mode clean-aindent-mode cargo auto-yasnippet auto-highlight-symbol auto-compile alchemist aggressive-indent adaptive-wrap ace-window ace-link ace-jump-helm-line ac-ispell))
+ '(safe-local-variable-values
+   '((git-commit-major-mode . git-commit-elisp-text-mode)
+     (javascript-backend . tern)
+     (javascript-backend . lsp))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
