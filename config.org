@@ -65,20 +65,48 @@
     (interactive)
     (dolist (file (magit-unstaged-files))
       (stage-and-commit-file file)))
-  
+ 
   (transient-append-suffix 'magit-commit "c"
     '("E" "Commit each unstaged file" commit-each-unstaged-file))
 #+end_src
 *** Replay commits on top of branch
+    Using sleep-for works fine but would be good to figure out a more reliable
+    check.
 #+begin_src emacs-lisp
+  (defun wait-for-git-rebase ()
+    (print "wait for rebase")
+    (if (not (file-exists-p ".git/REBASE_HEAD"))
+        (progn
+          (sleep-for 1)
+          (print "checking for rebase...")
+          (wait-for-git-rebase))))
+  
+  (defun wait-for-git-lock ()
+    (print "wait for lock")
+    (if (not (file-exists-p ".git/index.lock"))
+        (progn
+          (sleep-for 1)
+          (print "checking for index lock...")
+          (wait-for-git-lock))))
+  
+  (defun wait-for-git-lock-release ()
+    (print "wait for lock release")
+    (if (file-exists-p ".git/index.lock")
+        (progn
+          (sleep-for 1)
+          (print "checking for index lock release...")
+          (wait-for-git-lock-release))))
+  
   (defun replay-commits-on-branch (commit)
     "Replay the commits starting at the point on top of another branch"
     (interactive (list (magit-reset-read-branch-or-commit
                         (concat (magit--propertize-face "Hard" 'bold)
                                 " reset %s to"))))
-    (let ((parent (car (magit-commit-parents (magit-commit-at-point)))))
-      (magit-rebase-edit-commit parent '())
+    (let ((commit-at-point (magit-commit-at-point)))
+      (magit-rebase-edit-commit commit-at-point '())
+      (sleep-for 1)
       (magit-reset-hard commit)
+      (sleep-for 1)
       (magit-rebase-continue)))
   
   (transient-append-suffix 'magit-rebase "s"
