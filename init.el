@@ -503,6 +503,7 @@ It should only modify the values of Spacemacs settings."
    js2-basic-offset 2
    js2-strict-missing-semi-warning nil
    js-indent-level 2
+   typescript-indent-level 2
    css-indent-offset 2
    web-mode-markup-indent-offset 2
    web-mode-code-indent-offset 2
