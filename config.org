@@ -21,8 +21,14 @@
     (if (and buffer-file-name
              (not (string-equal mode-name "Makefile")))
         (setq indent-tabs-mode nil)))
-
+  
   (add-hook 'find-file-hook 'handle-tab-exceptions)
+  
+  ;;; java indentation
+  (add-hook
+   'java-mode-hook
+   (lambda ()
+     (setq c-basic-offset 2)))
 #+end_src
 *** Importmagic
 #+begin_src emacs-lisp
