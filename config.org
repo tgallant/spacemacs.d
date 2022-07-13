@@ -34,6 +34,11 @@
 #+begin_src emacs-lisp
   (setq importmagic-python-interpreter "~/.pyenv/shims/python")
 #+end_src
+*** Undo Tree
+Save all ~.undo-tree~ files in ~~/.emacs.d/undo~.
+#+begin_src emacs-lisp
+  (setq undo-tree-history-directory-alist '(("." . "~/.emacs.d/undo")))
+#+end_src
 ** Org
 *** Basic
 **** Set Base Org Folder
@@ -91,7 +96,7 @@
           (sleep-for 1)
           (print "checking for rebase...")
           (wait-for-git-rebase))))
-  
+
   (defun wait-for-git-lock ()
     (print "wait for lock")
     (if (not (file-exists-p ".git/index.lock"))
@@ -99,7 +104,7 @@
           (sleep-for 1)
           (print "checking for index lock...")
           (wait-for-git-lock))))
-  
+
   (defun wait-for-git-lock-release ()
     (print "wait for lock release")
     (if (file-exists-p ".git/index.lock")
@@ -107,7 +112,7 @@
           (sleep-for 1)
           (print "checking for index lock release...")
           (wait-for-git-lock-release))))
-  
+
   (defun replay-commits-on-branch (commit)
     "Replay the commits starting at the point on top of another branch"
     (interactive (list (magit-reset-read-branch-or-commit
@@ -119,7 +124,7 @@
       (magit-reset-hard commit)
       (sleep-for 1)
       (magit-rebase-continue)))
-  
+
   (transient-append-suffix 'magit-rebase "s"
     '("b" "Replay commits on branch" replay-commits-on-branch))
 #+end_src
