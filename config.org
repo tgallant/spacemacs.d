@@ -39,6 +39,10 @@ Save all ~.undo-tree~ files in ~~/.emacs.d/undo~.
 #+begin_src emacs-lisp
   (setq undo-tree-history-directory-alist '(("." . "~/.emacs.d/undo")))
 #+end_src
+*** Turn on Auto Fill for text-mode
+#+begin_src emacs-lisp
+  (add-hook 'text-mode-hook 'turn-on-auto-fill)
+#+end_src
 ** Org
 *** Basic
 **** Set Base Org Folder
