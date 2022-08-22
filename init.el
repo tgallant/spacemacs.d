@@ -517,6 +517,7 @@ It should only modify the values of Spacemacs settings."
    dired-use-ls-dired nil
    insert-directory-program "gls"
    evil-escape-delay 0.2
+   native-comp-async-report-warnings-errors nil
    ))
 
 (defun dotspacemacs/user-env ()
