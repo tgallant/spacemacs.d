@@ -70,28 +70,30 @@ Save all ~.undo-tree~ files in ~~/.emacs.d/undo~.
   (defun undo-last-commit ()
     (interactive)
     (magit-reset-soft "HEAD^"))
-  
-  (transient-append-suffix 'magit-reset "w"
-    '("u" "undo" undo-last-commit))
+
+  (with-eval-after-load 'magit
+    (transient-append-suffix 'magit-reset "w"
+      '("u" "undo" undo-last-commit)))
 #+end_src
 *** Stage and commit each unstaged file
 #+begin_src emacs-lisp
   (defun stage-and-commit-file (file)
     (magit-stage-file file)
     (magit-run-git "commit" "-m" file))
-  
+
   (defun commit-each-unstaged-file ()
     "Stage and commit each file returned by magit-unstaged-files"
     (interactive)
     (dolist (file (magit-unstaged-files))
       (stage-and-commit-file file)))
- 
-  (transient-append-suffix 'magit-commit "c"
-    '("E" "Commit each unstaged file" commit-each-unstaged-file))
+
+  (with-eval-after-load 'magit
+    (transient-append-suffix 'magit-commit "c"
+      '("E" "Commit each unstaged file" commit-each-unstaged-file)))
 #+end_src
 *** Replay commits on top of branch
-    Using sleep-for works fine but would be good to figure out a more reliable
-    check.
+Using sleep-for works fine but would be good to figure out a more reliable
+check.
 #+begin_src emacs-lisp
   (defun wait-for-git-rebase ()
     (print "wait for rebase")
@@ -129,6 +131,7 @@ Save all ~.undo-tree~ files in ~~/.emacs.d/undo~.
       (sleep-for 1)
       (magit-rebase-continue)))
 
-  (transient-append-suffix 'magit-rebase "s"
-    '("b" "Replay commits on branch" replay-commits-on-branch))
+  (with-eval-after-load 'magit
+    (transient-append-suffix 'magit-rebase "s"
+      '("b" "Replay commits on branch" replay-commits-on-branch)))
 #+end_src
