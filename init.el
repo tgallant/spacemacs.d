@@ -56,7 +56,6 @@ This function should only modify configuration layer settings."
      erlang
      rust
      git
-     github
      markdown
      nginx
      (go :variables
