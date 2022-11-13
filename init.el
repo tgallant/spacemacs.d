@@ -49,6 +49,7 @@ This function should only modify configuration layer settings."
      html
      yaml
      emacs-lisp
+     common-lisp
      racket
      rust
      git
