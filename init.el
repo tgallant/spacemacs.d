@@ -41,23 +41,18 @@ This function should only modify configuration layer settings."
      auto-completion
      better-defaults
      themes-megapack
-     multiple-cursors
-     treemacs
      helm
      sql
      docker
      javascript
      typescript
-     graphviz
      html
      yaml
      emacs-lisp
      racket
-     erlang
      rust
      git
      markdown
-     nginx
      (go :variables
          go-backend 'lsp
          go-tab-width 2
