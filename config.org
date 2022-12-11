@@ -4,6 +4,16 @@
 #+begin_src emacs-lisp
   (setq initial-frame-alist '((top . 30) (left . 30) (width . 125) (height . 45)))
 #+end_src
+*** Elisp Path
+#+begin_src emacs-lisp
+  (defconst paths
+    '("~/src/advent2022/src"))
+
+  (defun add-to-load-path (path)
+    (add-to-list 'load-path path))
+
+  (mapc 'add-to-load-path paths)
+#+end_src
 *** Info Path
 #+begin_src emacs-lisp
   (defun add-local-info-dir ()
