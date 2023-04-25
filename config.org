@@ -145,3 +145,23 @@ check.
     (transient-append-suffix 'magit-rebase "s"
       '("b" "Replay commits on branch" replay-commits-on-branch)))
 #+end_src
+*** Add and push tag
+#+begin_src emacs-lisp
+  (defun undo-last-commit ()
+    (interactive)
+    (magit-reset-soft "HEAD^"))
+
+  (defun tag-and-push (name rev &optional args)
+    (interactive (list (magit-read-tag "Tag name")
+                       (magit-read-branch-or-commit "Place tag on")
+                       (let ((args (magit-tag-arguments)))
+                         (when current-prefix-arg
+                           (cl-pushnew "--annotate" args))
+                         args)))
+    (magit-tag-create name rev args)
+    (magit-push-tag name "origin"))
+
+  (with-eval-after-load 'magit
+    (transient-append-suffix 'magit-tag "t"
+      '("T" "tag and push" tag-and-push)))
+#+end_src
