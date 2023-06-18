@@ -165,3 +165,46 @@ check.
     (transient-append-suffix 'magit-tag "t"
       '("T" "tag and push" tag-and-push)))
 #+end_src
+*** Bump tag version
+Read the most recent tag. If it contains a version number like ~example.v1~ then
+bump to the next version like ~example.v2~.
+
+#+begin_src emacs-lisp
+  (defun magit-read-tag-with-initial-value (prompt initial)
+    (magit-completing-read prompt (magit-list-tags) nil
+                           nil initial 'magit-revision-history
+                           (magit-tag-at-point)))
+
+  (defun latest-tag ()
+    (nth 0 (magit-git-lines "describe" "--tags")))
+
+  (defun make-next-tag (tag-parts)
+    (cond ((= (length tag-parts) 0)
+           (format "%s.v2" (nth 0 tag-parts)))
+          (:else (->> (nth 1 tag-parts)
+                      (string-to-number)
+                      (+ 1)
+                      (format "%s.v%d" (nth 0 tag-parts))))))
+
+  (defun bump-tag (tag)
+    (-> (split-string tag ".v")
+        (make-next-tag)))
+
+  (defun find-and-bump-tag ()
+    (-> (latest-tag)
+        (bump-tag)))
+
+  (defun bump-tag-version (name rev &optional args)
+    (interactive
+     (list (magit-read-tag-with-initial-value "Tag name" (find-and-bump-tag))
+           (magit-read-branch-or-commit "Place tag on")
+           (let ((args (magit-tag-arguments)))
+             (when current-prefix-arg
+               (cl-pushnew "--annotate" args))
+             args)))
+    (magit-tag-create name rev args))
+
+  (with-eval-after-load 'magit
+    (transient-append-suffix 'magit-tag "t"
+      '("v" "bump tag version" bump-tag-version)))
+#+end_src
