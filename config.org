@@ -204,7 +204,13 @@ bump to the next version like ~example.v2~.
              args)))
     (magit-tag-create name rev args))
 
+  (defun bump-tag-version-and-push (name rev &optional args)
+    (bump-tag-version)
+    (magit-push-tag name "origin"))
+
   (with-eval-after-load 'magit
-    (transient-append-suffix 'magit-tag "t"
-      '("v" "bump tag version" bump-tag-version)))
+    (transient-append-suffix 'magit-tag "T"
+      '("v" "bump tag version" bump-tag-version))
+    (transient-append-suffix 'magit-tag "v"
+      '("V" "bump tag version and push" bump-tag-version)))
 #+end_src
