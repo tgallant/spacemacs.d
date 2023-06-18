@@ -102,8 +102,8 @@ Save all ~.undo-tree~ files in ~~/.emacs.d/undo~.
       '("E" "Commit each unstaged file" commit-each-unstaged-file)))
 #+end_src
 *** Replay commits on top of branch
-Using sleep-for works fine but would be good to figure out a more reliable
-check.
+    Using sleep-for works fine but would be good to figure out a more reliable
+    check.
 #+begin_src emacs-lisp
   (defun wait-for-git-rebase ()
     (print "wait for rebase")
@@ -166,8 +166,8 @@ check.
       '("T" "tag and push" tag-and-push)))
 #+end_src
 *** Bump tag version
-Read the most recent tag. If it contains a version number like ~example.v1~ then
-bump to the next version like ~example.v2~.
+    Read the most recent tag. If it contains a version number like ~example.v1~
+    then bump to the next version like ~example.v2~.
 
 #+begin_src emacs-lisp
   (defun magit-read-tag-with-initial-value (prompt initial)
