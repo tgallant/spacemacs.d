@@ -50,7 +50,7 @@ This function should only modify configuration layer settings."
      html
      yaml
      emacs-lisp
-     common-lisp
+     common-lisp-sly
      racket
      haskell
      rust
