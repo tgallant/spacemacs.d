@@ -7,7 +7,7 @@
 *** Elisp Path
 #+begin_src emacs-lisp
   (defconst paths
-    '("~/src/advent2022/src"))
+    '("~/src/advent2022/"))
 
   (defun add-to-load-path (path)
     (add-to-list 'load-path path))
@@ -52,6 +52,15 @@ Save all ~.undo-tree~ files in ~~/.emacs.d/undo~.
 *** Turn on Auto Fill for text-mode
 #+begin_src emacs-lisp
   (add-hook 'text-mode-hook 'turn-on-auto-fill)
+#+end_src
+*** Disable Kubernetes auto refresh
+#+begin_src emacs-lisp
+  (setq kubernetes-poll-frequency 3600)
+  (setq kubernetes-redraw-frequency 3600)
+#+end_src
+*** Use ripgrep for helm search
+#+begin_src emacs-lisp
+  (setq helm-ag-base-command "rg -S --no-heading")
 #+end_src
 ** Org
 *** Basic
