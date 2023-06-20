@@ -65,8 +65,6 @@ This function should only modify configuration layer settings."
           org-enable-github-support t
           org-hide-leading-stars t
           org-enable-verb-support t
-          org-startup-indented nil
-          org-indent-mode nil
           org-adapt-indentation t
           org-odd-levels-only t)
      (shell :variables
