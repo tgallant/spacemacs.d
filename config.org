@@ -196,7 +196,7 @@ Save all ~.undo-tree~ files in ~~/.emacs.d/undo~.
                       (format "%s.v%d" (nth 0 tag-parts))))))
 
   (defun bump-tag (tag)
-    (-> (split-string tag ".v")
+    (-> (split-string tag "\\.v")
         (make-next-tag)))
 
   (defun find-and-bump-tag ()
