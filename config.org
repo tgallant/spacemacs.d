@@ -253,20 +253,17 @@ Save all ~.undo-tree~ files in ~~/.emacs.d/undo~.
     (nth 0 (magit-git-lines "describe" "--tags")))
 
   (defun make-next-tag (tag-parts)
-    (cond ((= (length tag-parts) 0)
+    (cond ((= (length tag-parts) 1)
            (format "%s.v2" (nth 0 tag-parts)))
           (:else (->> (nth 1 tag-parts)
                       (string-to-number)
                       (+ 1)
                       (format "%s.v%d" (nth 0 tag-parts))))))
 
-  (defun bump-tag (tag)
-    (-> (split-string tag "\\.v")
-        (make-next-tag)))
-
   (defun find-and-bump-tag ()
     (-> (latest-tag)
-        (bump-tag)))
+        (split-string "\\.v")
+        (make-next-tag)))
 
   (defun bump-tag-version (name rev &optional args)
     (interactive
