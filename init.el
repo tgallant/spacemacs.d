@@ -60,7 +60,11 @@ This function should only modify configuration layer settings."
          go-backend 'lsp
          go-tab-width 2
          go-format-before-save t)
-     (python :variables python-test-runner 'pytest :backend 'lsp)
+     (python :variables
+             python-test-runner 'pytest
+             python-formatter 'black
+             python-format-on-save t
+             :backend 'lsp)
      (org :variables
           org-enable-github-support t
           org-hide-leading-stars t
