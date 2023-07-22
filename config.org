@@ -115,6 +115,39 @@ Save all ~.undo-tree~ files in ~~/.emacs.d/undo~.
                  (push file org-agenda-files)))
             (org-projectile-todo-files)))
 #+end_src
+*** Capture templates
+    Daily items will be captured in a file that contains the current date. Every
+    day a new daily file will be used.
+
+    The idea is to capture everything into one file for the day to day. If some
+    ideas or items become more important they can be refiled into an appropriate
+    file.
+
+    #+begin_src emacs-lisp
+      (defun format-date-value (val)
+        (if (= 2 (length (number-to-string val))) val
+          (format "0%s" val)))
+
+      (defun daily-filename ()
+        (cl-destructuring-bind (_ _ _ d m y _ _ _) (decode-time)
+          (format "%s/daily/%s-%s-%s.org"
+                  org-directory
+                  y
+                  (format-date-value m)
+                  (format-date-value d))))
+
+      (defvar org-daily-capture-location (daily-filename))
+
+      (defun update-org-daily-capture-location ()
+        (setq org-daily-capture-location (daily-filename)))
+
+      (run-with-timer 0 (* 60 30) 'update-org-daily-capture-location)
+
+      (setq org-capture-templates
+            '(("d" "Daily" entry
+               (file org-daily-capture-location)
+               "* %?")))
+    #+end_src
 ** Magit
 *** Undo last commit
 #+begin_src emacs-lisp
