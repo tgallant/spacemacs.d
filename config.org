@@ -101,11 +101,11 @@ Save all ~.undo-tree~ files in ~~/.emacs.d/undo~.
   (with-eval-after-load 'org
     (setq org-agenda-files '("~/org")))
 #+end_src
-**** Enable org-indent-mode
-#+begin_src emacs-lisp
-  (with-eval-after-load 'org
-    (setq org-startup-indented t))
-#+end_src
+**** Disable org-indent-mode
+    #+begin_src emacs-lisp
+      (with-eval-after-load 'org
+        (setq org-startup-indented nil))
+    #+end_src
 *** Add project TODOs to Agenda
 #+begin_src emacs-lisp
   (with-eval-after-load 'org-agenda
