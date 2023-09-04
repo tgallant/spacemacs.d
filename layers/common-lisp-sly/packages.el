@@ -7,7 +7,6 @@
     evil-cleverparens
     parinfer
     sly
-    (sly-company :requires (sly company))
     (sly-macrostep :requires (sly macrostep))
     (sly-repl-ansi-color :requires sly)))
 
@@ -52,8 +51,8 @@
     :defer t
     :init
     (spacemacs/register-repl 'sly 'sly)
-    (sp-local-pair '(sly-mrepl-mode) "'" "'" :actions nil)
-    (sp-local-pair '(sly-mrepl-mode) "`" "`" :actions nil)
+    ;; (sp-local-pair '(sly-mrepl-mode) "'" "'" :actions nil)
+    ;; (sp-local-pair '(sly-mrepl-mode) "`" "`" :actions nil)
     (evil-set-initial-state 'sly-mrepl-mode 'insert)
     (evil-set-initial-state 'sly-inspector-mode 'emacs)
     (evil-set-initial-state 'sly-db-mode 'emacs)
