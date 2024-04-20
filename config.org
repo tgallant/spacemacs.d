@@ -148,6 +148,15 @@ Save all ~.undo-tree~ files in ~~/.emacs.d/undo~.
                (file org-daily-capture-location)
                "* %?")))
     #+end_src
+*** Babel
+    #+begin_src emacs-lisp
+      (setq ob-mermaid-cli-path "/Users/tim/.nvm/versions/node/v20.10.0/bin/mmdc")
+
+      (with-eval-after-load 'org
+        (org-babel-do-load-languages
+         'org-babel-load-languages
+         '((mermaid . t))))
+    #+end_src
 ** Magit
 *** Undo last commit
 #+begin_src emacs-lisp
