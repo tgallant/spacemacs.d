@@ -125,29 +125,10 @@ Save all ~.undo-tree~ files in ~~/.emacs.d/undo~.
     file.
 
     #+begin_src emacs-lisp
-      (defun format-date-value (val)
-        (if (= 2 (length (number-to-string val))) val
-          (format "0%s" val)))
-
-      (defun daily-filename ()
-        (cl-destructuring-bind (_ _ _ d m y _ _ _) (decode-time)
-          (format "%s/daily/%s-%s-%s.org"
-                  org-directory
-                  y
-                  (format-date-value m)
-                  (format-date-value d))))
-
-      (defvar org-daily-capture-location (daily-filename))
-
-      (defun update-org-daily-capture-location ()
-        (setq org-daily-capture-location (daily-filename)))
-
-      (run-with-timer 0 (* 60 30) 'update-org-daily-capture-location)
-
       (setq org-capture-templates
-            '(("d" "Daily" entry
-               (file org-daily-capture-location)
-               "* %?")))
+            '(("t" "TODOs" entry
+               (file+headline "~/org/TODOs.org" "TODOs")
+               "* TODO %?")))
     #+end_src
 *** Babel
     #+begin_src emacs-lisp
