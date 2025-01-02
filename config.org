@@ -6,13 +6,8 @@
 #+end_src
 *** Elisp Path
 #+begin_src emacs-lisp
-  (defconst paths
-    '("~/src/advent2022/"))
-
-  (defun add-to-load-path (path)
-    (add-to-list 'load-path path))
-
-  (mapc 'add-to-load-path paths)
+  (let ((default-directory "~/elisp"))
+    (normal-top-level-add-subdirs-to-load-path))
 #+end_src
 *** Info Path
 #+begin_src emacs-lisp
@@ -72,7 +67,7 @@ Save all ~.undo-tree~ files in ~~/.emacs.d/undo~.
       See URL `http://pypi.python.org/pypi/ruff'."
         :command ("ruff"
                   "check"
-                  "--output-format=text"
+                  "--output-format=full"
                   (eval (when buffer-file-name
                           (concat "--stdin-filename=" buffer-file-name)))
                   "-")
@@ -95,6 +90,10 @@ Save all ~.undo-tree~ files in ~~/.emacs.d/undo~.
                   (setq flycheck-checker 'python-ruff
                         flycheck-checker-error-threshold 900)))
     #+end_src
+*** Reuse dired buffer
+    #+begin_src emacs-lisp
+      (setq dired-kill-when-opening-new-dired-buffer t)
+    #+end_src
 ** Org
 *** Basic
 **** Set Base Org Folder
@@ -107,14 +106,50 @@ Save all ~.undo-tree~ files in ~~/.emacs.d/undo~.
       (with-eval-after-load 'org
         (setq org-startup-indented nil))
     #+end_src
+**** Verb configuration
+     #+begin_src emacs-lisp
+       (with-eval-after-load 'org
+         (setq verb-auto-kill-response-buffers t))
+     #+end_src
+**** Set Refile Targets
+     #+begin_src emacs-lisp
+       (setq org-refile-targets
+             '(("BACKLOG.org" :maxlevel . 1)))
+     #+end_src
+**** Set Face Attributes
+     #+begin_src emacs-lisp
+       (with-eval-after-load 'org-faces
+         (dolist (face '(org-document-title
+                         org-level-1
+                         org-level-2
+                         org-level-3
+                         org-level-4
+                         org-level-5
+                         org-level-6
+                         org-level-7
+                         org-level-8))
+           (set-face-attribute face nil :height 1.0)))
+     #+end_src
+**** Set archive location
+     #+begin_src emacs-lisp
+       (defun tg/update-org-archive-location ()
+         (interactive)
+         (setq org-archive-location
+               (concat "archive/"
+                       (format-time-string "%Y%m" (current-time))
+                       ".org_archive::")))
+
+       (with-eval-after-load 'org
+         (tg/update-org-archive-location))
+     #+end_src
 *** Add project TODOs to Agenda
 #+begin_src emacs-lisp
-  (with-eval-after-load 'org-agenda
-    (require 'org-projectile)
-    (mapcar #'(lambda (file)
-               (when (file-exists-p file)
-                 (push file org-agenda-files)))
-            (org-projectile-todo-files)))
+  ;; (with-eval-after-load 'org-agenda
+  ;;   (require 'org-projectile)
+  ;;   (mapcar #'(lambda (file)
+  ;;              (when (file-exists-p file)
+  ;;                (push file org-agenda-files)))
+  ;;           (org-projectile-todo-files)))
 #+end_src
 *** Capture templates
     Daily items will be captured in a file that contains the current date. Every
@@ -266,13 +301,14 @@ Save all ~.undo-tree~ files in ~~/.emacs.d/undo~.
              args)))
     (magit-tag-create name rev args))
 
-  (defun bump-tag-version-and-push (name rev &optional args)
-    (bump-tag-version)
-    (magit-push-tag name "origin"))
+  ;; (defun bump-tag-version-and-push (name rev &optional args)
+  ;;   (bump-tag-version)
+  ;;   (magit-push-tag name "origin"))
 
   (with-eval-after-load 'magit
     (transient-append-suffix 'magit-tag "T"
       '("v" "bump tag version" bump-tag-version))
-    (transient-append-suffix 'magit-tag "v"
-      '("V" "bump tag version and push" bump-tag-version)))
+    ;; (transient-append-suffix 'magit-tag "v"
+    ;;   '("V" "bump tag version and push" bump-tag-version-and-push))
+    )
 #+end_src
