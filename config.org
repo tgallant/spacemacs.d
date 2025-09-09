@@ -55,8 +55,12 @@ Save all ~.undo-tree~ files in ~~/.emacs.d/undo~.
 #+end_src
 *** Use ripgrep for helm search
 #+begin_src emacs-lisp
-  (setq helm-ag-base-command "rg -S --no-heading")
+  ;; (setq helm-ag-base-command "rg -S --no-heading")
 #+end_src
+*** disable ignore list for now
+    #+begin_src emacs-lisp
+      ;; (setq helm-ag-use-grep-ignore-list nil)
+    #+end_src
 *** Use ruff for python flycheck
     #+begin_src emacs-lisp
       ;; From https://github.com/flycheck/flycheck/issues/1974#issuecomment-1343495202
@@ -67,6 +71,7 @@ Save all ~.undo-tree~ files in ~~/.emacs.d/undo~.
       See URL `http://pypi.python.org/pypi/ruff'."
         :command ("ruff"
                   "check"
+                  "--preview"
                   "--output-format=full"
                   (eval (when buffer-file-name
                           (concat "--stdin-filename=" buffer-file-name)))

@@ -32,16 +32,17 @@ This function should only modify configuration layer settings."
 
    ;; List of configuration layers to load.
    dotspacemacs-configuration-layers
-   '(
+   '(lua
+     nginx
      ;; ----------------------------------------------------------------
      ;; Example of useful layers you may want to use right away.
      ;; Uncomment some layer names and press `SPC f e R' (Vim style) or
      ;; `M-m f e R' (Emacs style) to install them.
      ;; ----------------------------------------------------------------
      auto-completion
+     compleseus
      better-defaults
      themes-megapack
-     helm
      sql
      docker
      javascript
@@ -84,6 +85,7 @@ This function should only modify configuration layer settings."
    ;; configuration in `dotspacemacs/user-config'.
    dotspacemacs-additional-packages
    '(
+     acme-theme
      sqlite3
      ob-mermaid)
    ;; A list of packages and/or extensions that will not be install and loaded.
@@ -233,6 +235,7 @@ It should only modify the values of Spacemacs settings."
    ;; Press `SPC T n' to cycle to the next theme in the list (works great
    ;; with 2 themes variants, one dark and one light)
    dotspacemacs-themes '(gruvbox
+                         acme
                          modus-operandi
                          modus-vivendi
                          modus-vivendi-tinted)
