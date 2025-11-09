@@ -169,6 +169,44 @@ Save all ~.undo-tree~ files in ~~/.emacs.d/undo~.
 
       (spacemacs/set-leader-keys "on" 'my/new-worktree-session)
     #+end_src
+*** gptel configuration
+    #+begin_src emacs-lisp
+      (setq gptel-default-mode 'markdown-mode)
+
+      (add-hook 'gptel-post-response-functions
+                (lambda (beg end)
+                  (message "IT GOT CALLED")
+                  (save-excursion
+                    (goto-char beg)
+                    (push-mark)
+                    (goto-char end)
+                    (activate-mark)
+                    (markdown-fill-paragraph))))
+
+      (gptel-make-ollama "Ollama"
+        :host "localhost:11434"
+        :stream t
+        :models '(gemma3 gpt-oss:20b deepseek-r1 qwen3 qwen3-coder))
+
+      (gptel-make-anthropic "Claude"
+        :stream t)
+
+      (gptel-make-preset 'technical
+        :description "preset for technical research, planning, and coding"
+        :system "You are a Ken Thompson level expert computer programmer.
+      You will help with technical research, planning, and coding.
+      Always show your chain of thought.
+      Always consider multiple points of view, both for and against.
+      FORMATTING:
+      Your response is markdown.
+      Add newlines before and after paragraphs.
+      Use markdown headings to provide structure to your response.
+      Use bullet points to provide structure to things that are short and punchy.
+      Use headings and paragraphs to provide structure to longer ideas.
+      Ensure prose has a max line length of 80.
+      Code or other quoted output should not adhere to line length limits.
+      ")
+    #+end_src
 ** Org
 *** Basic
 **** Set Base Org Folder
@@ -216,6 +254,10 @@ Save all ~.undo-tree~ files in ~~/.emacs.d/undo~.
 
        (with-eval-after-load 'org
          (tg/update-org-archive-location))
+     #+end_src
+**** HTML Export
+     #+begin_src emacs-lisp
+       (setq org-html-validation-link nil)
      #+end_src
 *** Add project TODOs to Agenda
 #+begin_src emacs-lisp
@@ -396,3 +438,23 @@ Save all ~.undo-tree~ files in ~~/.emacs.d/undo~.
     ;;   '("V" "bump tag version and push" bump-tag-version-and-push))
     )
 #+end_src
+** Lisp
+*** set inferior lisp
+    #+begin_src emacs-lisp
+      ;; (setq inferior-lisp-program "ros -Q run")
+      (setq sly-lisp-implementations
+            '((sbcl ("sbcl" "--dynamic-space-size" "5000"))
+              (ciel-sbcl ("sbcl"
+                          "--dynamic-space-size" "5000"
+                          "--core" "/Users/tim/common-lisp/CIEL/ciel-core"
+                          "--eval" "(in-package :ciel-user)"))
+              (ciel ("ciel"))))
+
+      (setq sly-default-lisp 'ciel-sbcl)
+
+      (load (expand-file-name "~/quicklisp/slime-helper.el"))
+    #+end_src
+*** roswell setup
+    #+begin_src emacs-lisp
+      ;; (load (expand-file-name "~/.roswell/helper.el"))
+    #+end_src
