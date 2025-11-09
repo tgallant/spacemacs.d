@@ -7,8 +7,7 @@
     evil-cleverparens
     parinfer
     sly
-    (sly-macrostep :requires (sly macrostep))
-    (sly-repl-ansi-color :requires sly)))
+    (sly-macrostep :requires (sly macrostep))))
 
 (defun common-lisp-sly/pre-init-xterm-color ()
   (when (configuration-layer/package-usedp 'sly)
@@ -18,8 +17,8 @@
   (spacemacs|use-package-add-hook persp-mode
     :post-config
     (def-persp-buffer-save/load :mode 'sly-mrepl-mode :tag-symbol 'def-sly-buffer
-      :save-vars '(major-mode)
-      :after-load-function (lambda (b &rest _) (with-current-buffer b (sly))))))
+                                :save-vars '(major-mode)
+                                :after-load-function (lambda (b &rest _) (with-current-buffer b (sly))))))
 
 (defun common-lisp-sly/pre-init-popwin ()
   (spacemacs|use-package-add-hook sly
@@ -120,6 +119,7 @@
             ("mt" . "trace")))
     (use-package sly-mrepl
       :after sly
+      :hook (sly-mrepl-mode . global-company-mode)
       :bind
       (:map sly-mrepl-mode-map
             ("<up>" . sly-mrepl-previous-input-or-button)
@@ -127,17 +127,9 @@
             ("<C-up>" . sly-mrepl-previous-input-or-button)
             ("<C-down>" . sly-mrepl-next-input-or-button)))))
 
-(defun common-lisp-sly/init-sly-company ()
-  (use-package sly-company
-    :config
-    (setf sly-company-completion 'fuzzy)
-    (add-hook 'sly-mode-hook 'sly-company-mode)
-    (add-hook 'sly-mrepl-hook 'sly-company-mode)
-    (add-to-list 'company-backends 'sly-company)))
-
 (defun common-lisp-sly/post-init-company ()
-  '(push '(company-sly company-capf company-dabbrev-code) company-backends-lisp-mode)
-  (spacemacs|add-company-backends lisp-mode))
+  '(push '(company-capf company-dabbrev-code) company-backends-lisp-mode)
+  (spacemacs|add-company-backends lisp-mode :modes global-company-mode))
 
 (defun common-lisp-sly/init-sly-macrostep ()
   (use-package sly-macrostep
@@ -146,8 +138,3 @@
     (when (configuration-layer/layer-usedp 'emacs-lisp)
       (spacemacs/set-leader-keys-for-major-mode 'lisp-mode
         "ms" 'spacemacs/macrostep-transient-state/body))))
-
-(defun common-lisp-sly/init-sly-repl-ansi-color ()
-  (use-package sly-repl-ansi-color
-    :demand t
-    :config (push 'sly-repl-ansi-color sly-contribs)))
