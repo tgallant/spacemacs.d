@@ -99,6 +99,76 @@ Save all ~.undo-tree~ files in ~~/.emacs.d/undo~.
     #+begin_src emacs-lisp
       (setq dired-kill-when-opening-new-dired-buffer t)
     #+end_src
+*** vterm smoothness
+    #+begin_src emacs-lisp
+      (setq vterm-timer-delay nil)
+    #+end_src
+*** Open TODOs view
+    #+begin_src emacs-lisp
+      (defun my/open-todo-and-agenda ()
+        (interactive)
+        (delete-other-windows)
+        (find-file "~/org/TODOs.org")
+        (split-window-right)
+        (other-window 1)
+        (org-agenda nil "a")
+        (other-window 1))
+
+      (spacemacs/set-leader-keys "ot" 'my/open-todo-and-agenda)
+    #+end_src
+*** Projectile switch action
+    #+begin_src emacs-lisp
+      (defun my/projectile-layout-handler ()
+        "Custom layout for switching projects: Dired on left, Magit on right."
+        (interactive)
+        (delete-other-windows)
+        (dired (projectile-project-root))
+        (magit-status)
+        (other-window 1))
+
+      (setq projectile-switch-project-action 'my/projectile-layout-handler)
+    #+end_src
+*** start new worktree
+    #+begin_src emacs-lisp
+      (defun current-project ()
+        (-> (projectile-project-root)
+            (substring 0 -1)))
+
+      (defun construct-worktree-path (name)
+        (string-join (list (current-project) "-" name)))
+
+      (defun make-wt (name dir)
+        (list name dir))
+
+      (defun wt-name (wt)
+        (nth 0 wt))
+
+      (defun wt-dir (wt)
+        (nth 1 wt))
+
+      (defun create-worktree (name)
+        (let ((dir (construct-worktree-path name)))
+          (magit-worktree-branch dir name (magit-get-current-branch))
+          (make-wt name dir)))
+
+      (defun switch-project (wt)
+        (projectile-switch-project-by-name (wt-dir wt))
+        wt)
+
+      (defun start-tmux-window (wt)
+        (shell-command
+         (format "tmux new-window -c %s -n %s 'gemini --yolo --skip-trust'"
+                 (shell-quote-argument (wt-dir wt))
+                 (shell-quote-argument (wt-name wt)))))
+
+      (defun my/new-worktree-session ()
+        (-> (read-string "New worktree name: ")
+            (create-worktree)
+            (switch-project)
+            (start-tmux-window)))
+
+      (spacemacs/set-leader-keys "on" 'my/new-worktree-session)
+    #+end_src
 ** Org
 *** Basic
 **** Set Base Org Folder
@@ -178,6 +248,15 @@ Save all ~.undo-tree~ files in ~~/.emacs.d/undo~.
         (org-babel-do-load-languages
          'org-babel-load-languages
          '((mermaid . t))))
+    #+end_src
+** Markdown
+*** Line wrapping
+    #+begin_src emacs-lisp
+      (add-hook 'markdown-mode-hook
+                (lambda ()
+                  (setq-default fill-column 80)
+                  (visual-line-mode 1)
+                  (visual-fill-column-mode 1)))
     #+end_src
 ** Magit
 *** Undo last commit
