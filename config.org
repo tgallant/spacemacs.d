@@ -99,6 +99,10 @@ Save all ~.undo-tree~ files in ~~/.emacs.d/undo~.
     #+begin_src emacs-lisp
       (setq dired-kill-when-opening-new-dired-buffer t)
     #+end_src
+*** dired ls args
+    #+begin_src emacs-lisp
+      (setq dired-listing-switches "-alh")
+    #+end_src
 *** vterm smoothness
     #+begin_src emacs-lisp
       (setq vterm-timer-delay nil)
@@ -175,7 +179,6 @@ Save all ~.undo-tree~ files in ~~/.emacs.d/undo~.
 
       (add-hook 'gptel-post-response-functions
                 (lambda (beg end)
-                  (message "IT GOT CALLED")
                   (save-excursion
                     (goto-char beg)
                     (push-mark)
@@ -259,15 +262,6 @@ Save all ~.undo-tree~ files in ~~/.emacs.d/undo~.
      #+begin_src emacs-lisp
        (setq org-html-validation-link nil)
      #+end_src
-*** Add project TODOs to Agenda
-#+begin_src emacs-lisp
-  ;; (with-eval-after-load 'org-agenda
-  ;;   (require 'org-projectile)
-  ;;   (mapcar #'(lambda (file)
-  ;;              (when (file-exists-p file)
-  ;;                (push file org-agenda-files)))
-  ;;           (org-projectile-todo-files)))
-#+end_src
 *** Capture templates
     Daily items will be captured in a file that contains the current date. Every
     day a new daily file will be used.
@@ -299,6 +293,25 @@ Save all ~.undo-tree~ files in ~~/.emacs.d/undo~.
                   (setq-default fill-column 80)
                   (visual-line-mode 1)
                   (visual-fill-column-mode 1)))
+    #+end_src
+*** Latex
+    #+begin_src emacs-lisp
+      (with-eval-after-load 'ox-latex
+        (setq org-latex-default-packages-alist
+              '(("AUTO" "inputenc" t ("pdflatex"))
+                ("T1" "fontenc" t ("pdflatex"))
+                ("" "graphicx" t)
+                ("" "longtable" nil)))
+
+        (setq org-latex-packages-alist nil))
+
+      (with-eval-after-load 'ox-latex
+        (add-to-list 'org-latex-classes
+                     '("poetry"
+                       "\\documentclass{article}
+                        [NO-DEFAULT-PACKAGES]
+                        [NO-PACKAGES]"
+                       ("\\section{%s}" . "\\section*{%s}"))))
     #+end_src
 ** Magit
 *** Undo last commit
@@ -450,7 +463,7 @@ Save all ~.undo-tree~ files in ~~/.emacs.d/undo~.
                           "--eval" "(in-package :ciel-user)"))
               (ciel ("ciel"))))
 
-      (setq sly-default-lisp 'ciel-sbcl)
+      (setq sly-default-lisp 'ciel)
 
       (load (expand-file-name "~/quicklisp/slime-helper.el"))
     #+end_src
