@@ -26,9 +26,9 @@
     (if (and buffer-file-name
              (not (string-equal mode-name "Makefile")))
         (setq indent-tabs-mode nil)))
-  
+
   (add-hook 'find-file-hook 'handle-tab-exceptions)
-  
+
   ;;; java indentation
   (add-hook
    'java-mode-hook
@@ -63,6 +63,9 @@ Save all ~.undo-tree~ files in ~~/.emacs.d/undo~.
     #+end_src
 *** Use ruff for python flycheck
     #+begin_src emacs-lisp
+      ;; only check on save
+      (setq flycheck-check-syntax-automatically '(mode-enabled save))
+
       ;; From https://github.com/flycheck/flycheck/issues/1974#issuecomment-1343495202
       (flycheck-define-checker python-ruff
         "A Python syntax and style checker using the ruff utility.
@@ -71,7 +74,6 @@ Save all ~.undo-tree~ files in ~~/.emacs.d/undo~.
       See URL `http://pypi.python.org/pypi/ruff'."
         :command ("ruff"
                   "check"
-                  "--preview"
                   "--output-format=full"
                   (eval (when buffer-file-name
                           (concat "--stdin-filename=" buffer-file-name)))
@@ -165,13 +167,22 @@ Save all ~.undo-tree~ files in ~~/.emacs.d/undo~.
                  (shell-quote-argument (wt-dir wt))
                  (shell-quote-argument (wt-name wt)))))
 
+      (defun my/create-tmux-window ()
+        (interactive)
+        (-> (magit-get-current-branch)
+            (make-wt default-directory)
+            (start-tmux-window)))
+
       (defun my/new-worktree-session ()
+        (interactive)
         (-> (read-string "New worktree name: ")
             (create-worktree)
             (switch-project)
             (start-tmux-window)))
 
       (spacemacs/set-leader-keys "on" 'my/new-worktree-session)
+
+      (spacemacs/set-leader-keys "oc" 'my/create-tmux-window)
     #+end_src
 *** gptel configuration
     #+begin_src emacs-lisp
@@ -313,6 +324,29 @@ Save all ~.undo-tree~ files in ~~/.emacs.d/undo~.
                         [NO-PACKAGES]"
                        ("\\section{%s}" . "\\section*{%s}"))))
     #+end_src
+** AI
+*** gptel
+    #+begin_src emacs-lisp
+      (setq
+       gptel-model 'gemini-3.1-pro-preview
+       gptel-backend (gptel-make-gemini "Gemini"
+                       :key (getenv "GEMINI_API_KEY")
+                       :stream t
+                       :models '(gemini-3.1-pro-preview
+                                 gemini-3.1-flash-lite)))
+    #+end_src
+*** pi-coding-agent
+    #+begin_src emacs-lisp
+      (add-hook 'pi-coding-agent-chat-mode-hook
+                (lambda ()
+                  (display-line-numbers-mode -1)))
+
+      (add-hook 'pi-coding-agent-input-mode-hook
+                (lambda ()
+                  (display-line-numbers-mode -1)))
+
+      (spacemacs/set-leader-keys "op" 'pi-coding-agent-menu)
+    #+end_src
 ** Magit
 *** Undo last commit
 #+begin_src emacs-lisp
@@ -386,71 +420,55 @@ Save all ~.undo-tree~ files in ~~/.emacs.d/undo~.
 #+end_src
 *** Add and push tag
 #+begin_src emacs-lisp
-  (defun undo-last-commit ()
+  (defun today ()
+    (format-time-string "%Y-%m-%d"))
+
+  (defun tag-base (prefix)
+    (format "%s-%s-tim" prefix (today)))
+
+  (defun tag-version (tag version)
+    (format "%s-v%d" tag version))
+
+  (defun next-tag-version (tag)
+    (cl-loop for v from 1 to 100
+             with next-tag
+             with version
+             do (setq version (tag-version tag v))
+             if (not (magit-rev-verify version)) return version))
+
+  (defun create-tag (tag)
+    (magit-call-git "tag" tag "HEAD")
+    tag)
+
+  (defun push-tag (tag)
+    (magit-git-push "origin" tag nil))
+
+  (defun tag-and-push (prefix)
+    (-> (tag-base prefix)
+        (next-tag-version)
+        (create-tag)
+        (push-tag)))
+
+  (defun my/tag-and-push-dev ()
     (interactive)
-    (magit-reset-soft "HEAD^"))
+    (tag-and-push "dev-all"))
 
-  (defun tag-and-push (name rev &optional args)
-    (interactive (list (magit-read-tag "Tag name")
-                       (magit-read-branch-or-commit "Place tag on")
-                       (let ((args (magit-tag-arguments)))
-                         (when current-prefix-arg
-                           (cl-pushnew "--annotate" args))
-                         args)))
-    (magit-tag-create name rev args)
-    (magit-push-tag name "origin"))
+  (defun my/tag-and-push-stg ()
+    (interactive)
+    (tag-and-push "feature-stg"))
 
-  (with-eval-after-load 'magit
-    (transient-append-suffix 'magit-tag "t"
-      '("T" "tag and push" tag-and-push)))
+  (spacemacs/declare-prefix "og" "git")
+
+  (spacemacs/declare-prefix "ogt" "tags")
+
+  (spacemacs/set-leader-keys "ogtd" 'my/tag-and-push-dev)
+
+  (spacemacs/set-leader-keys "ogts" 'my/tag-and-push-stg)
 #+end_src
-*** Bump tag version
-    Read the most recent tag. If it contains a version number like ~example.v1~
-    then bump to the next version like ~example.v2~.
-
-#+begin_src emacs-lisp
-  (defun magit-read-tag-with-initial-value (prompt initial)
-    (magit-completing-read prompt (magit-list-tags) nil
-                           nil initial 'magit-revision-history
-                           (magit-tag-at-point)))
-
-  (defun latest-tag ()
-    (nth 0 (magit-git-lines "describe" "--tags")))
-
-  (defun make-next-tag (tag-parts)
-    (cond ((= (length tag-parts) 1)
-           (format "%s.v2" (nth 0 tag-parts)))
-          (:else (->> (nth 1 tag-parts)
-                      (string-to-number)
-                      (+ 1)
-                      (format "%s.v%d" (nth 0 tag-parts))))))
-
-  (defun find-and-bump-tag ()
-    (-> (latest-tag)
-        (split-string "\\.v")
-        (make-next-tag)))
-
-  (defun bump-tag-version (name rev &optional args)
-    (interactive
-     (list (magit-read-tag-with-initial-value "Tag name" (find-and-bump-tag))
-           (magit-read-branch-or-commit "Place tag on")
-           (let ((args (magit-tag-arguments)))
-             (when current-prefix-arg
-               (cl-pushnew "--annotate" args))
-             args)))
-    (magit-tag-create name rev args))
-
-  ;; (defun bump-tag-version-and-push (name rev &optional args)
-  ;;   (bump-tag-version)
-  ;;   (magit-push-tag name "origin"))
-
-  (with-eval-after-load 'magit
-    (transient-append-suffix 'magit-tag "T"
-      '("v" "bump tag version" bump-tag-version))
-    ;; (transient-append-suffix 'magit-tag "v"
-    ;;   '("V" "bump tag version and push" bump-tag-version-and-push))
-    )
-#+end_src
+*** repository dir
+    #+begin_src emacs-lisp
+      (setq magit-repository-directories '(("~/src" . 1)))
+    #+end_src
 ** Lisp
 *** set inferior lisp
     #+begin_src emacs-lisp
@@ -466,8 +484,4 @@ Save all ~.undo-tree~ files in ~~/.emacs.d/undo~.
       (setq sly-default-lisp 'ciel)
 
       (load (expand-file-name "~/quicklisp/slime-helper.el"))
-    #+end_src
-*** roswell setup
-    #+begin_src emacs-lisp
-      ;; (load (expand-file-name "~/.roswell/helper.el"))
     #+end_src

@@ -47,6 +47,7 @@ This function should only modify configuration layer settings."
      sql
      lua
      nginx
+     common-lisp-sly
      docker
      javascript
      typescript
@@ -61,6 +62,7 @@ This function should only modify configuration layer settings."
      rust
      git
      markdown
+     (llm-client :variables llm-client-enable-gptel t)
      (go :variables
          go-backend 'lsp
          go-tab-width 2
@@ -69,6 +71,7 @@ This function should only modify configuration layer settings."
              python-test-runner 'pytest
              python-formatter 'black
              python-format-on-save t
+             python-virtualenv-management 'pet
              :backend 'lsp)
      (org :variables
           org-enable-github-support t
@@ -90,11 +93,11 @@ This function should only modify configuration layer settings."
    ;; configuration in `dotspacemacs/user-config'.
    dotspacemacs-additional-packages
    '(
-     sqlite3
-     ob-mermaid
      acme-theme
      catppuccin-theme
-     ;; (claude-code :location (recipe :fetcher github :repo "stevemolitor/claude-code.el"))
+     sqlite3
+     ob-mermaid
+     pi-coding-agent
      )
    ;; A list of packages and/or extensions that will not be install and loaded.
    dotspacemacs-excluded-packages '()
@@ -244,6 +247,7 @@ It should only modify the values of Spacemacs settings."
    ;; with 2 themes variants, one dark and one light)
    dotspacemacs-themes '(gruvbox
                          acme
+                         catppuccin
                          modus-operandi
                          modus-vivendi
                          modus-vivendi-tinted
@@ -571,7 +575,10 @@ This function is called at the very end of Spacemacs startup, after layer
 configuration.
 Put your configuration code here, except for variables that should be set
 before packages are loaded."
-  (org-babel-load-file "~/.spacemacs.d/config.org"))
+
+  (org-babel-load-file "~/.spacemacs.d/config.org")
+
+  )
 
 ;; Do not write anything past this comment. This is where Emacs will
 ;; auto-generate custom variable definitions.
