@@ -89,10 +89,10 @@ This function should only modify configuration layer settings."
    ;; configuration in `dotspacemacs/user-config'.
    dotspacemacs-additional-packages
    '(
-     acme-theme
      sqlite3
      ob-mermaid
      acme-theme
+     catppuccin-theme
      ;; (claude-code :location (recipe :fetcher github :repo "stevemolitor/claude-code.el"))
      )
    ;; A list of packages and/or extensions that will not be install and loaded.
@@ -245,7 +245,8 @@ It should only modify the values of Spacemacs settings."
                          acme
                          modus-operandi
                          modus-vivendi
-                         modus-vivendi-tinted)
+                         modus-vivendi-tinted
+                         catppuccin)
    ;; Set the theme for the Spaceline. Supported themes are `spacemacs',
    ;; `all-the-icons', `custom', `doom', `vim-powerline' and `vanilla'. The
    ;; first three are spaceline themes. `doom' is the doom-emacs mode-line.
@@ -550,6 +551,7 @@ This function is called immediately after `dotspacemacs/init', before layer
 configuration.
 It is mostly for variables that should be set before packages are loaded.
 If you are unsure, try setting them in `dotspacemacs/user-config' first."
+  (setq catppuccin-flavor 'mocha)
   )
 
 (defun dotspacemacs/user-load ()
