@@ -296,6 +296,19 @@ Save all ~.undo-tree~ files in ~~/.emacs.d/undo~.
          'org-babel-load-languages
          '((mermaid . t))))
     #+end_src
+*** insert todo
+    #+begin_src emacs-lisp
+      (defun my/org-insert-todo-today ()
+        (interactive)
+        (org-insert-heading-after-current)
+        (org-todo "TODO")
+        (org-schedule nil (current-time))
+        (org-back-to-heading)
+        (end-of-line))
+
+      (spacemacs/set-leader-keys-for-major-mode 'org-mode
+        "iT" 'my/org-insert-todo-today)
+    #+end_src
 ** Markdown
 *** Line wrapping
     #+begin_src emacs-lisp
