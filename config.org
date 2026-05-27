@@ -309,6 +309,28 @@ Save all ~.undo-tree~ files in ~~/.emacs.d/undo~.
       (spacemacs/set-leader-keys-for-major-mode 'org-mode
         "iT" 'my/org-insert-todo-today)
     #+end_src
+*** insert emacs-lisp block
+    #+begin_src emacs-lisp
+      (defun write-heading (text)
+        (org-insert-heading-after-current)
+        (insert text)
+        (end-of-line))
+
+      (defun insert-new-heading ()
+        (-> (read-string "Heading: ")
+            (write-heading)))
+
+      (defun my/org-insert-emacs-lisp-src ()
+        (interactive)
+        (insert-new-heading)
+        (newline-and-indent)
+        (org-insert-structure-template "src")
+        (insert "emacs-lisp")
+        (org-edit-special))
+
+      (spacemacs/set-leader-keys-for-major-mode 'org-mode
+        "iS" 'my/org-insert-emacs-lisp-src)
+    #+end_src
 ** Markdown
 *** Line wrapping
     #+begin_src emacs-lisp
