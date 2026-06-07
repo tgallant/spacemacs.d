@@ -520,3 +520,40 @@ Save all ~.undo-tree~ files in ~~/.emacs.d/undo~.
 
       (load (expand-file-name "~/quicklisp/slime-helper.el"))
     #+end_src
+** Pace Calc
+   #+begin_src emacs-lisp
+     (defvar km-per-m 1.609344)
+     (defvar secs-in-hour (* 60 60))
+
+     (defun split-time (time)
+       (mapcar 'string-to-number (split-string time ":")))
+
+     (defun time-to-secs (time)
+       (pcase (split-time time)
+         (`(,sec) sec)
+         (`(,min ,sec) (+ (* min 60) sec))
+         (`(,hour, min, sec) (+ (* hour secs-in-hour) (* min 60) sec))))
+
+     (defun dist-to-miles (dist)
+       (cond ((s-ends-with-p "km" dist)
+              (-> (substring dist 0 -2)
+                  (string-to-number)
+                  (/ km-per-m)))
+             ((s-ends-with-p "mi" dist)
+              (-> (substring dist 0 -1)
+                  (string-to-number)))))
+
+     (defun secs-to-time (secs)
+       (cond ((< secs secs-in-hour)
+              (format "%02d:%02d" (/ secs 60) (mod secs 60)))
+             (t (let* ((hours (/ secs secs-in-hour))
+                       (mins  (mod secs secs-in-hour))
+                       (rest  (mod secs mins)))
+                  (format "%02d:%02d:%02d" hours (/ mins 60) rest)))))
+
+     (defun pace-calc (dist time)
+       (->> (dist-to-miles dist)
+            (/ (time-to-secs time))
+            (secs-to-time)
+            (format "%s/mi")))
+   #+end_src
