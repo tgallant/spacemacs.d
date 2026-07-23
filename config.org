@@ -179,6 +179,29 @@ pi's =spawn_task= tool.  Source: =agent-tasks/= in this directory; run its
       (setq custom-file (locate-user-emacs-file "custom-vars.el"))
       (load custom-file 'noerror 'nomessage)
     #+end_src
+*** split and new vterm
+    #+begin_src emacs-lisp
+      (defun my/split-and-vterm ()
+        (interactive)
+        (cond ((window-in-direction 'left)
+               (split-window-vertically))
+              ((window-in-direction 'right)
+               (other-window 1)
+               (split-window-vertically))
+              (t
+               (split-window-horizontally)))
+        (other-window 1)
+        (let ((current-prefix-arg '(4)))
+          (call-interactively #'vterm)))
+
+      (spacemacs/set-leader-keys "o'" 'my/split-and-vterm)
+    #+end_src
+*** compile default shell
+    #+begin_src emacs-lisp
+      (setq explicit-shell-file-name "/bin/zsh")
+      (setq shell-file-name "/bin/zsh")
+      (setq shell-command-switch "-ic")
+    #+end_src
 ** Org
 *** Basic
 **** Set Base Org Folder
