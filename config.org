@@ -161,65 +161,23 @@ Save all ~.undo-tree~ files in ~~/.emacs.d/undo~.
         (projectile-switch-project-by-name (wt-dir wt))
         wt)
 
-      (defun start-tmux-window (wt)
-        (shell-command
-         (format "tmux new-window -c %s -n %s 'gemini --yolo --skip-trust'"
-                 (shell-quote-argument (wt-dir wt))
-                 (shell-quote-argument (wt-name wt)))))
-
-      (defun my/create-tmux-window ()
-        (interactive)
-        (-> (magit-get-current-branch)
-            (make-wt default-directory)
-            (start-tmux-window)))
-
-      (defun my/new-worktree-session ()
-        (interactive)
-        (-> (read-string "New worktree name: ")
-            (create-worktree)
-            (switch-project)
-            (start-tmux-window)))
-
-      (spacemacs/set-leader-keys "on" 'my/new-worktree-session)
-
-      (spacemacs/set-leader-keys "oc" 'my/create-tmux-window)
     #+end_src
-*** gptel configuration
+*** agent tasks
+Spawn pilish sessions into their own worktree and layout, from Emacs or from
+pi's =spawn_task= tool.  Source: =agent-tasks/= in this directory; run its
+=install.sh= once per machine to link the pi extension.
     #+begin_src emacs-lisp
-      (setq gptel-default-mode 'markdown-mode)
+      (add-to-list 'load-path (expand-file-name "agent-tasks" dotspacemacs-directory))
+      (require 'agent-tasks)
+      (agent-tasks-mode 1)
 
-      (add-hook 'gptel-post-response-functions
-                (lambda (beg end)
-                  (save-excursion
-                    (goto-char beg)
-                    (push-mark)
-                    (goto-char end)
-                    (activate-mark)
-                    (markdown-fill-paragraph))))
-
-      (gptel-make-ollama "Ollama"
-        :host "localhost:11434"
-        :stream t
-        :models '(gemma3 gpt-oss:20b deepseek-r1 qwen3 qwen3-coder))
-
-      (gptel-make-anthropic "Claude"
-        :stream t)
-
-      (gptel-make-preset 'technical
-        :description "preset for technical research, planning, and coding"
-        :system "You are a Ken Thompson level expert computer programmer.
-      You will help with technical research, planning, and coding.
-      Always show your chain of thought.
-      Always consider multiple points of view, both for and against.
-      FORMATTING:
-      Your response is markdown.
-      Add newlines before and after paragraphs.
-      Use markdown headings to provide structure to your response.
-      Use bullet points to provide structure to things that are short and punchy.
-      Use headings and paragraphs to provide structure to longer ideas.
-      Ensure prose has a max line length of 80.
-      Code or other quoted output should not adhere to line length limits.
-      ")
+      (spacemacs/set-leader-keys "oa" 'agent-tasks-list)
+      (spacemacs/set-leader-keys "on" 'agent-tasks-new)
+    #+end_src
+*** move customization variables
+    #+begin_src emacs-lisp
+      (setq custom-file (locate-user-emacs-file "custom-vars.el"))
+      (load custom-file 'noerror 'nomessage)
     #+end_src
 ** Org
 *** Basic
@@ -363,6 +321,7 @@ Save all ~.undo-tree~ files in ~~/.emacs.d/undo~.
 *** gptel
     #+begin_src emacs-lisp
       (setq
+       gptel-default-mode 'org-mode
        gptel-model 'gemini-3.1-pro-preview
        gptel-backend (gptel-make-gemini "Gemini"
                        :key (getenv "GEMINI_API_KEY")
@@ -372,16 +331,62 @@ Save all ~.undo-tree~ files in ~~/.emacs.d/undo~.
     #+end_src
 *** pi-coding-agent
     #+begin_src emacs-lisp
-      (add-hook 'pi-coding-agent-chat-mode-hook
+      (add-hook 'pilish-chat-mode-hook
                 (lambda ()
                   (display-line-numbers-mode -1)))
 
-      (add-hook 'pi-coding-agent-input-mode-hook
+      (add-hook 'pilish-input-mode-hook
                 (lambda ()
                   (display-line-numbers-mode -1)))
 
-      (spacemacs/set-leader-keys "op" 'pi-coding-agent-menu)
+      (spacemacs/set-leader-keys "op" 'pilish)
     #+end_src
+**** Model picker allowlist
+Pilish requests every available model over RPC, ignoring Pi's scoped model
+list.  Limit its picker to the exact =provider/model-id= entries in
+=enabledModels= in =~/.pi/agent/settings.json= (or =$PI_CODING_AGENT_DIR=).
+The file is read each time, so changing the allowlist needs no restart.
+An absent or empty allowlist preserves Pilish's normal unfiltered behavior.
+#+name: pilish-model-filter
+#+begin_src emacs-lisp
+  (require 'json)
+  (require 'seq)
+
+  (defun my/pilish-filter-model-response (response)
+    "Limit a successful model-list RESPONSE to Pi's global enabledModels.
+Match exact provider/model-id strings; leave other RPC responses unchanged."
+    (if (not (and (eq (plist-get response :success) t)
+                  (equal (plist-get response :command) "get_available_models")))
+        response
+      (let* ((settings-file
+              (expand-file-name
+               "settings.json"
+               (or (getenv "PI_CODING_AGENT_DIR") "~/.pi/agent/")))
+             (enabled
+              (when (file-readable-p settings-file)
+                (with-temp-buffer
+                  (insert-file-contents settings-file)
+                  (plist-get (json-parse-buffer :object-type 'plist
+                                                :array-type 'list
+                                                :null-object nil)
+                             :enabledModels)))))
+        (if (not enabled)
+            response
+          (let* ((result (copy-sequence response))
+                 (data (copy-sequence (plist-get response :data)))
+                 (models
+                  (seq-filter
+                   (lambda (model)
+                     (member (concat (plist-get model :provider) "/"
+                                     (plist-get model :id))
+                             enabled))
+                   (plist-get data :models))))
+            (plist-put result :data (plist-put data :models models)))))))
+
+  (with-eval-after-load 'pilish-core
+    (advice-add 'pilish--rpc-sync :filter-return
+                #'my/pilish-filter-model-response))
+#+end_src
 ** Magit
 *** Undo last commit
 #+begin_src emacs-lisp
@@ -502,7 +507,26 @@ Save all ~.undo-tree~ files in ~~/.emacs.d/undo~.
 #+end_src
 *** repository dir
     #+begin_src emacs-lisp
-      (setq magit-repository-directories '(("~/src" . 1)))
+      (setq magit-repository-directories '(("~/src" . 1)
+                                           ("~/scheme/" . 1)
+                                           ("~/common-lisp/" . 1)
+                                           ("~/elisp/" . 1)))
+    #+end_src
+** Documentation
+*** consult-info
+    #+begin_src emacs-lisp
+      (defun my/info-scheme ()
+        (interactive)
+        (consult-info "guile" "r5rs"))
+
+      (defun my/info-emacs ()
+        (interactive)
+        (consult-info "emacs" "elisp" "cl"))
+
+      (spacemacs/declare-prefix "os" "search")
+
+      (spacemacs/set-leader-keys "oss" 'my/info-scheme)
+      (spacemacs/set-leader-keys "ose" 'my/info-emacs)
     #+end_src
 ** Lisp
 *** set inferior lisp
@@ -519,6 +543,11 @@ Save all ~.undo-tree~ files in ~~/.emacs.d/undo~.
       (setq sly-default-lisp 'ciel)
 
       (load (expand-file-name "~/quicklisp/slime-helper.el"))
+    #+end_src
+** Scheme
+*** sxml-match formatting
+    #+begin_src emacs-lisp
+      (put 'sxml-match 'scheme-indent-function 1)
     #+end_src
 ** Pace Calc
    #+begin_src emacs-lisp
