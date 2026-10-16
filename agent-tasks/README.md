@@ -12,7 +12,8 @@ Emacs or from pi's `spawn_task` tool, and manage them from a dashboard.
 ## Use
 
 - `SPC o a` — dashboard: `RET` switch/resume, `R` resume all, `m` magit,
-  `+` new task, `^` parent, `k` close, `g` refresh.
+  `+` new task, `^` parent, `d` close, `gr` refresh, `q` quit.  Without evil,
+  `k` also closes and `g` refreshes.
 - `SPC o n` — new task.
 - In any pilish session: ask the agent to hand work off as a task.
 

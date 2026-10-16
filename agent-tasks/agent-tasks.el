@@ -718,6 +718,13 @@ Resume its session file when it exists, else start a fresh session."
     (`(0 . ,branch) branch)
     (_ "")))
 
+(defun agent-tasks--repo-name (dir)
+  "Return the name of the repository containing DIR, or \"\".
+For a linked worktree this is the name of its main checkout."
+  (condition-case nil
+      (agent-tasks--project-name (agent-tasks--main-checkout dir))
+    (error "")))
+
 (defun agent-tasks--entries ()
   "Return `tabulated-list-entries' for the dashboard."
   (append
@@ -727,8 +734,8 @@ Resume its session file when it exists, else start a fresh session."
             (vector (agent-tasks-task-name task)
                     (agent-tasks--status-label (agent-tasks--status task))
                     (agent-tasks--project-name (agent-tasks-task-repo task))
-                    (format "%s (%s)" (agent-tasks-task-branch task)
-                            (agent-tasks-task-base task))
+                    ;; The task's branch is its name; show where it started.
+                    (format "from %s" (agent-tasks-task-base task))
                     (agent-tasks--age (agent-tasks-task-created task))
                     (or (agent-tasks-task-parent task) ""))))
     (agent-tasks--task-list))
@@ -740,10 +747,47 @@ Resume its session file when it exists, else start a fresh session."
                     (vector (propertize (abbreviate-file-name dir) 'face 'shadow)
                             (agent-tasks--status-label
                              (agent-tasks--session-status chat))
-                            (agent-tasks--project-name dir)
+                            (agent-tasks--repo-name dir)
                             (agent-tasks--current-branch dir)
                             ""
-                            (or (agent-tasks--layout-of-buffer chat) "")))))))
+                            ""))))))
+
+(defconst agent-tasks--columns
+  '(("Task" t) ("Status" t) ("Repo" t) ("Branch" t) ("Age" nil) ("Parent" t))
+  "Dashboard columns as (NAME SORTABLE).")
+
+(defun agent-tasks--column-widths (entries available)
+  "Return column widths that show every cell of ENTRIES in full.
+When a row would not fit in AVAILABLE columns, the Task column
+shrinks, but never below the width of its header."
+  (let* ((widths (cl-loop for (name) in agent-tasks--columns
+                          for i from 0
+                          collect (apply #'max (string-width name)
+                                         (mapcar (lambda (e) (string-width (aref (cadr e) i)))
+                                                 entries))))
+         ;; padding + columns + one space between columns + one spare column
+         (row (+ 1 (apply #'+ widths) (1- (length widths)) 1))
+         (excess (- row available)))
+    (when (> excess 0)
+      (setcar widths (max (string-width (caar agent-tasks--columns))
+                          (- (car widths) excess))))
+    widths))
+
+(defun agent-tasks--print ()
+  "Recompute the dashboard's entries and column widths, then redraw it."
+  (let* ((entries (agent-tasks--entries))
+         (window (get-buffer-window (current-buffer) t))
+         (widths (agent-tasks--column-widths
+                  entries (if window (window-body-width window) (frame-width)))))
+    (setq tabulated-list-entries entries
+          tabulated-list-format
+          (apply #'vector
+                 (cl-loop for (name sortable) in agent-tasks--columns
+                          for width in widths
+                          for last = (equal name (car (car (last agent-tasks--columns))))
+                          collect (list name (if last 0 width) sortable))))
+    (tabulated-list-init-header)
+    (tabulated-list-print t)))
 
 (defconst agent-tasks--buffer-name "*agent-tasks*"
   "Name of the dashboard buffer.")
@@ -755,18 +799,36 @@ Resume its session file when it exists, else start a fresh session."
   "m" #'agent-tasks-magit
   "+" #'agent-tasks-new
   "^" #'agent-tasks-goto-parent
+  "d" #'agent-tasks-close
   "k" #'agent-tasks-close)
+
+(declare-function evil-set-initial-state "evil-core" (mode state))
+(declare-function evil-define-key* "evil-core" (state keymap key def &rest bindings))
+
+(defun agent-tasks--setup-evil ()
+  "Make the dashboard keys win over evil's motion state.
+j and k stay Vim navigation, so close is on d."
+  (evil-set-initial-state 'agent-tasks-list-mode 'motion)
+  (evil-define-key* 'motion agent-tasks-list-mode-map
+    (kbd "RET") #'agent-tasks-visit
+    "R" #'agent-tasks-resume-all
+    "m" #'agent-tasks-magit
+    "+" #'agent-tasks-new
+    "^" #'agent-tasks-goto-parent
+    "d" #'agent-tasks-close
+    "gr" #'revert-buffer
+    "q" #'quit-window))
+
+(with-eval-after-load 'evil (agent-tasks--setup-evil))
 
 (define-derived-mode agent-tasks-list-mode tabulated-list-mode "Agent-Tasks"
   "Dashboard of agent tasks and pilish sessions.
 \\{agent-tasks-list-mode-map}"
   (setq tabulated-list-format
-        [("Task" 24 t) ("Status" 22 t) ("Repo" 14 t) ("Branch (base)" 28 t)
-         ("Age" 5 nil) ("Parent" 0 t)]
+        (apply #'vector (mapcar (lambda (c) (list (car c) 0 (cadr c)))
+                                agent-tasks--columns))
         tabulated-list-padding 1)
-  (add-hook 'tabulated-list-revert-hook
-            (lambda () (setq tabulated-list-entries (agent-tasks--entries)))
-            nil t)
+  (setq-local revert-buffer-function (lambda (&rest _) (agent-tasks--print)))
   (tabulated-list-init-header))
 
 (defun agent-tasks--refresh-dashboard ()
@@ -774,8 +836,7 @@ Resume its session file when it exists, else start a fresh session."
   (when-let* ((buf (get-buffer agent-tasks--buffer-name))
               ((get-buffer-window buf t)))
     (with-current-buffer buf
-      (setq tabulated-list-entries (agent-tasks--entries))
-      (tabulated-list-print t))))
+      (agent-tasks--print))))
 
 (add-hook 'agent-tasks-after-poll-hook #'agent-tasks--refresh-dashboard)
 
@@ -788,9 +849,9 @@ Resume its session file when it exists, else start a fresh session."
       (unless (derived-mode-p 'agent-tasks-list-mode)
         (agent-tasks-list-mode))
       (setq default-directory dir)
-      (setq tabulated-list-entries (agent-tasks--entries))
-      (tabulated-list-print t)
-      (pop-to-buffer (current-buffer)))))
+      ;; Display first so the columns are sized for the window.
+      (pop-to-buffer (current-buffer))
+      (agent-tasks--print))))
 
 (defun agent-tasks--id-at-point ()
   "Return the dashboard row id at point, or signal."

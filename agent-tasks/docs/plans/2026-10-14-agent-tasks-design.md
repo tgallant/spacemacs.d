@@ -131,6 +131,9 @@ and the `SPC o c` / `SPC o n` bindings.  Add `(require 'agent-tasks)`,
 - A new layout starts with the previous layout's windows and pilish's input
   window is dedicated; the first visit un-dedicates the remaining window
   before showing the task.
+- Under evil the dashboard opened in motion state, whose RET, k, g, + and ^
+  shadowed the mode's keys.  The keys are now also bound for motion state;
+  close is on d there because j/k stay navigation.
 - Killing a buffer of another layout prompts in persp-mode; deliberate kills
   bind `persp-kill-foreign-buffer-behaviour` to `kill`.
 

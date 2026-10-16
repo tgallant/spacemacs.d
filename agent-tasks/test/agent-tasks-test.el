@@ -645,6 +645,39 @@ PLIST overrides task slots; pass :chat-buffer nil for no session."
 
 ;;;; Dashboard
 
+(ert-deftest agent-tasks-dashboard-keys-work-under-evil ()
+  "Evil's motion state must not shadow the dashboard's keys."
+  (skip-unless (require 'evil nil t))
+  (let ((was-on (bound-and-true-p evil-mode)))
+    (unwind-protect
+        (progn
+          (evil-mode 1)
+          (with-temp-buffer
+            (agent-tasks-list-mode)
+            (evil-normalize-keymaps)
+            (should (eq evil-state 'motion))
+            (dolist (binding '(("RET" . agent-tasks-visit)
+                               ("R" . agent-tasks-resume-all)
+                               ("m" . agent-tasks-magit)
+                               ("+" . agent-tasks-new)
+                               ("^" . agent-tasks-goto-parent)
+                               ("d" . agent-tasks-close)
+                               ("gr" . revert-buffer)
+                               ("q" . quit-window)
+                               ;; Navigation stays Vim-like.
+                               ("j" . evil-next-line)
+                               ("k" . evil-previous-line)
+                               ("gg" . evil-goto-first-line)))
+              (should (equal (cons (car binding) (key-binding (kbd (car binding))))
+                             binding)))))
+      (unless was-on (evil-mode -1)))))
+
+(ert-deftest agent-tasks-dashboard-close-key-without-evil ()
+  (with-temp-buffer
+    (agent-tasks-list-mode)
+    (should (eq (lookup-key agent-tasks-list-mode-map "k") #'agent-tasks-close))
+    (should (eq (lookup-key agent-tasks-list-mode-map "d") #'agent-tasks-close))))
+
 (ert-deftest agent-tasks-age ()
   (let ((now (encode-time (parse-time-string "2026-10-14T12:00:00"))))
     (should (equal (agent-tasks--age "2026-10-14T11:59:30" now) "<1m"))
@@ -662,21 +695,61 @@ PLIST overrides task slots; pass :chat-buffer nil for no session."
     (let* ((repo (agent-tasks-test--make-repo tmp "proj"))
            (task (agent-tasks-test--register "feat" (expand-file-name "proj-feat/" tmp)
                                              :repo repo :parent "Default"))
-           (untracked (agent-tasks--pilish-start repo)))
+           (untracked (agent-tasks--pilish-start repo))
+           (side-wt (expand-file-name "proj-side/" tmp))
+           (plain-dir (file-name-as-directory (expand-file-name "notes" tmp))))
       (make-directory (agent-tasks-task-worktree task))
       (agent-tasks-test--set-status task 'streaming)
       (agent-tasks-test--register "old" (expand-file-name "proj-old/" tmp)
                                   :repo repo :chat-buffer nil :last-status 'working)
       (make-directory (expand-file-name "proj-old/" tmp))
-      (let ((entries (agent-tasks--entries)))
-        (should (equal (butlast (agent-tasks-test--row entries "feat") 2)
-                       '("feat" "working" "proj" "feat (main)")))
-        (should (equal (car (last (agent-tasks-test--row entries "feat"))) "Default"))
+      (agent-tasks-test--git repo "worktree" "add" "-q" "-b" "side" side-wt)
+      (make-directory plain-dir)
+      (let* ((in-worktree (agent-tasks--pilish-start side-wt))
+             (outside-git (agent-tasks--pilish-start plain-dir))
+             (entries (agent-tasks--entries)))
+        ;; A task's branch is its name, so only its base is shown.
+        (should (equal (agent-tasks-test--row entries "feat")
+                       '("feat" "working" "proj" "from main" "<1m" "Default")))
         (should (equal (nth 1 (agent-tasks-test--row entries "old"))
                        "dormant (interrupted)"))
-        (should (equal (butlast (agent-tasks-test--row entries untracked) 2)
-                       (list (abbreviate-file-name repo) "idle" "proj" "main")))
-        (should (= (length entries) 3))))))
+        ;; Untracked sessions: no age or parent; repo comes from git.
+        (should (equal (agent-tasks-test--row entries untracked)
+                       (list (abbreviate-file-name repo) "idle" "proj" "main" "" "")))
+        (should (equal (agent-tasks-test--row entries in-worktree)
+                       (list (abbreviate-file-name side-wt) "idle" "proj" "side" "" "")))
+        (should (equal (agent-tasks-test--row entries outside-git)
+                       (list (abbreviate-file-name plain-dir) "idle" "" "" "" "")))
+        (should (= (length entries) 5))))))
+
+(ert-deftest agent-tasks-column-widths-fit-content ()
+  (let ((entries (list (list "a" (vector "task-model-selection" "working" ".spacemacs.d"
+                                         "from master" "6m" ""))
+                       (list "b" (vector "~/src/cmt/" "dormant (interrupted)" "cmt"
+                                         "fix/search-relevance" "" "Default")))))
+    ;; Each column is as wide as its widest cell or header.
+    (should (equal (agent-tasks--column-widths entries 200)
+                   '(20 21 12 20 3 7)))
+    ;; Too narrow: the Task column gives way first, never below its header.
+    ;; A row is 1 padding + columns + 5 separators, and 1 column stays free.
+    (should (equal (agent-tasks--column-widths entries 80)
+                   '(10 21 12 20 3 7)))
+    (should (equal (agent-tasks--column-widths entries 10)
+                   '(4 21 12 20 3 7)))))
+
+(ert-deftest agent-tasks-dashboard-shows-every-cell-in-full ()
+  (agent-tasks-test--with-status-env tmp
+    (let ((repo (agent-tasks-test--make-repo tmp "proj")))
+      (agent-tasks-test--register "task-model-selection"
+                                  (expand-file-name "proj-task-model-selection/" tmp)
+                                  :repo repo :base "master")
+      (make-directory (expand-file-name "proj-task-model-selection/" tmp))
+      (with-temp-buffer
+        (agent-tasks-list-mode)
+        (agent-tasks--print)
+        (should (string-match-p "task-model-selection +idle +proj +from master +<1m"
+                                (buffer-string)))
+        (should-not (string-match-p "\\.\\.\\.\\|\u2026" (buffer-string)))))))
 
 (ert-deftest agent-tasks-worktree-state ()
   (agent-tasks-test--with-spawn-env tmp
