@@ -43,6 +43,7 @@ A task spawned from Emacs or an untracked session has depth 1."
 (defvar pilish--state)
 (defvar pilish--process)
 (defvar pilish--input-buffer)
+(defvar pilish-extra-args)
 (defvar pilish-quit-without-confirmation)
 (defvar persp-kill-foreign-buffer-behaviour)
 (declare-function pilish--setup-session "pilish" (dir &optional session))
@@ -50,10 +51,69 @@ A task spawned from Emacs or an untracked session has depth 1."
 (declare-function pilish "pilish" (&optional session))
 (declare-function pilish-open-session-file "pilish" (session-file))
 
-(defun agent-tasks--pilish-start (dir)
-  "Start a pilish session in DIR without displaying it; return the chat buffer."
+(declare-function pilish--rpc-sync "pilish-core" (process command &optional timeout))
+(declare-function pilish--apply-state-response "pilish-ui" (chat-buf response))
+(declare-function pilish--find-session "pilish-ui" (dir &optional session))
+(declare-function pilish--session-file-cwd-or-error "pilish-menu" (path))
+(declare-function pilish--load-session-history "pilish-menu"
+                  (proc callback &optional chat-buf completion-callback))
+
+(defun agent-tasks--pilish-model-rpc (chat model command)
+  "Send COMMAND to CHAT, signalling a caller-visible error for MODEL."
+  (let ((reply (pilish--rpc-sync
+                (buffer-local-value 'pilish--process chat) command 20)))
+    (unless (eq (plist-get reply :success) t)
+      (error "Cannot select pi model %s: %s%s" model
+             (or (plist-get reply :error) "pi RPC timed out")
+             (if-let* ((stderr (plist-get reply :stderr)))
+                 (concat "\n" stderr) "")))
+    reply))
+
+(defun agent-tasks--pilish-check-model (chat model)
+  "Validate MODEL resolved by pi in CHAT and synchronize pilish's state.
+Pi can synthesize a custom model for an unknown ID on a known provider;
+reject that fallback instead of sending a prompt to a broken session."
+  (let* ((state (agent-tasks--pilish-model-rpc chat model '(:type "get_state")))
+         (selected (plist-get (plist-get state :data) :model))
+         (available (agent-tasks--pilish-model-rpc
+                     chat model '(:type "get_available_models"))))
+    (unless (and selected
+                 (seq-some
+                  (lambda (m)
+                    (and (equal (plist-get m :provider) (plist-get selected :provider))
+                         (equal (plist-get m :id) (plist-get selected :id))))
+                  (plist-get (plist-get available :data) :models)))
+      (error "Unknown or unavailable pi model: %s" model))
+    (pilish--apply-state-response chat state)))
+
+(defun agent-tasks--pilish-start (dir &optional model session-file)
+  "Start pilish in DIR without displaying it; return the chat buffer.
+MODEL is a pi CLI model pattern, or nil for pi's default.  SESSION-FILE
+resumes history at startup; explicit MODEL takes precedence over its model."
   (require 'pilish)
-  (pilish--setup-session dir))
+  (when model
+    (unless (and (stringp model) (not (string-blank-p model)))
+      (error "Invalid pi model %S; expected a non-empty model pattern" model))
+    ;; setup-session reuses a live process, in which case CLI arguments have
+    ;; no effect.  Never claim to have selected MODEL in an unrelated session.
+    (when-let* ((existing (pilish--find-session dir))
+                ((agent-tasks--pilish-process-live-p existing)))
+      (error "Cannot select pi model %s: session already running in %s" model dir)))
+  (let* ((pilish-extra-args
+          (append pilish-extra-args
+                  (when session-file (list "--session" session-file))
+                  (when model (list "--model" model))))
+         (chat (pilish--setup-session dir)))
+    (condition-case err
+        (progn
+          (when model (agent-tasks--pilish-check-model chat model))
+          (when session-file
+            (pilish--load-session-history
+             (buffer-local-value 'pilish--process chat) nil chat))
+          chat)
+      (error
+       (agent-tasks--pilish-kill chat)
+       (signal (car err) (cdr err))))))
 
 (defun agent-tasks--pilish-input (chat)
   "Return the input buffer of CHAT."
@@ -89,11 +149,17 @@ A task spawned from Emacs or an untracked session has depth 1."
   "Display the session of CHAT in the selected frame."
   (with-current-buffer chat (pilish)))
 
-(defun agent-tasks--pilish-resume (session-file)
-  "Resume SESSION-FILE as a live session in the selected window.
-Return the chat buffer."
+(defun agent-tasks--pilish-resume (session-file &optional model)
+  "Resume SESSION-FILE, retaining the task's MODEL when non-nil.
+Return the chat buffer.  Unpinned tasks use pilish's normal resume path."
   (require 'pilish)
-  (pilish-open-session-file session-file))
+  (if model
+      ;; pilish-open-session-file asynchronously sends switch_session, which
+      ;; restores the saved selection even if --model was passed at startup.
+      ;; Start directly on the file instead: pi honors the explicit CLI model.
+      (agent-tasks--pilish-start
+       (pilish--session-file-cwd-or-error session-file) model session-file)
+    (pilish-open-session-file session-file)))
 
 (defun agent-tasks--pilish-kill (chat)
   "Kill the session of CHAT and its buffers without asking."
@@ -302,13 +368,13 @@ Return its directory."
                                 (:copier nil))
   "A spawned agent task."
   name repo worktree branch base parent depth created prompt session-file
-  last-status
+  last-status model
   ;; Runtime only, not persisted:
   chat-buffer done shown busy-seen)
 
 (defconst agent-tasks--persisted-slots
   '(name repo worktree branch base parent depth created prompt session-file
-    last-status)
+    last-status model)
   "Task slots written to `agent-tasks-file'.")
 
 (defun agent-tasks--task-to-plist (task)
@@ -400,12 +466,13 @@ WORKTREE, BRANCH and BASE fill in the preamble's format specs."
   "Return the current local time as an ISO 8601 string."
   (format-time-string "%FT%T"))
 
-(cl-defun agent-tasks-spawn (&key name prompt repo base cwd parent-session)
+(cl-defun agent-tasks-spawn (&key name prompt repo base cwd parent-session model)
   "Spawn task NAME: worktree, layout and pilish session running PROMPT.
 REPO and BASE select the repository and base branch (see
 `agent-tasks--resolve-repo' and `agent-tasks--resolve-base'); CWD is
 the directory the request came from; PARENT-SESSION is the session
-file of the requesting pi session.  Return a plist describing the task."
+file of the requesting pi session.  MODEL is a pi model pattern (optionally
+with :<thinking>); nil uses pi's default.  Return a plist describing the task."
   (when (string-blank-p (or prompt ""))
     (error "Refusing to spawn %s with an empty prompt" name))
   (let* ((repo (agent-tasks--resolve-repo repo (or cwd default-directory)
@@ -427,11 +494,11 @@ file of the requesting pi session.  Return a plist describing the task."
              name live))
     (let ((worktree (agent-tasks--create-worktree repo name (car base))))
       (condition-case err
-          (let* ((chat (agent-tasks--pilish-start worktree))
+          (let* ((chat (agent-tasks--pilish-start worktree model))
                  (task (agent-tasks-task-create
                         :name name :repo repo :worktree worktree :branch name
                         :base (car base) :parent (car parent) :depth depth
-                        :created (agent-tasks--timestamp) :prompt prompt
+                        :created (agent-tasks--timestamp) :prompt prompt :model model
                         :last-status 'working :chat-buffer chat)))
             (agent-tasks--layout-create
              name (list chat (agent-tasks--pilish-input chat)))
@@ -439,15 +506,16 @@ file of the requesting pi session.  Return a plist describing the task."
             (agent-tasks--pilish-send
              chat (agent-tasks--full-prompt prompt worktree name (car base)))
             (agent-tasks--persist)
-            (list :task name :layout name :worktree worktree :branch name
-                  :base (car base) :baseFellBack (if (cdr base) t :false)))
+            (append (list :task name :layout name :worktree worktree :branch name
+                          :base (car base) :baseFellBack (if (cdr base) t :false))
+                    (when model (list :model model))))
         (error
          (error "Worktree %s was created, then spawning failed: %s"
                 (abbreviate-file-name worktree) (error-message-string err)))))))
 
 (defun agent-tasks-spawn-from-file (file)
   "Spawn a task from the JSON request in FILE and return a JSON reply.
-FILE holds name, prompt, repo, base, cwd and parentSession; it is
+FILE holds name, prompt, repo, base, model, cwd and parentSession; it is
 deleted.  Errors are returned as {\"error\": MESSAGE}."
   (json-serialize
    (condition-case err
@@ -460,6 +528,7 @@ deleted.  Errors are returned as {\"error\": MESSAGE}."
                             :prompt (plist-get req :prompt)
                             :repo (plist-get req :repo)
                             :base (plist-get req :base)
+                            :model (plist-get req :model)
                             :cwd (plist-get req :cwd)
                             :parent-session (plist-get req :parentSession)))
      (error (list :error (error-message-string err))))))
@@ -672,9 +741,10 @@ the branch, discarding uncommitted and unmerged work."
   "Start a live session for dormant TASK in its layout, without switching.
 Resume its session file when it exists, else start a fresh session."
   (let* ((file (agent-tasks-task-session-file task))
+         (model (agent-tasks-task-model task))
          (chat (if (and file (file-readable-p file))
-                   (save-window-excursion (agent-tasks--pilish-resume file))
-                 (agent-tasks--pilish-start (agent-tasks-task-worktree task))))
+                   (save-window-excursion (agent-tasks--pilish-resume file model))
+                 (agent-tasks--pilish-start (agent-tasks-task-worktree task) model)))
          (buffers (list chat (agent-tasks--pilish-input chat)))
          (name (agent-tasks-task-name task)))
     (setf (agent-tasks-task-chat-buffer task) chat
@@ -736,6 +806,7 @@ For a linked worktree this is the name of its main checkout."
                     (agent-tasks--project-name (agent-tasks-task-repo task))
                     ;; The task's branch is its name; show where it started.
                     (format "from %s" (agent-tasks-task-base task))
+                    (or (agent-tasks-task-model task) "default")
                     (agent-tasks--age (agent-tasks-task-created task))
                     (or (agent-tasks-task-parent task) ""))))
     (agent-tasks--task-list))
@@ -750,10 +821,11 @@ For a linked worktree this is the name of its main checkout."
                             (agent-tasks--repo-name dir)
                             (agent-tasks--current-branch dir)
                             ""
+                            ""
                             ""))))))
 
 (defconst agent-tasks--columns
-  '(("Task" t) ("Status" t) ("Repo" t) ("Branch" t) ("Age" nil) ("Parent" t))
+  '(("Task" t) ("Status" t) ("Repo" t) ("Branch" t) ("Model" t) ("Age" nil) ("Parent" t))
   "Dashboard columns as (NAME SORTABLE).")
 
 (defun agent-tasks--column-widths (entries available)
@@ -930,16 +1002,38 @@ j and k stay Vim navigation, so close is on d."
                                   (expand-file-name p)))))))
     (unless (string-empty-p name) name)))
 
-(defun agent-tasks-new (name repo prompt &optional base)
-  "Spawn task NAME in REPO with PROMPT, branching from BASE.
-Interactively, ask for BASE only with a prefix argument."
+(defun agent-tasks--enabled-models ()
+  "Return enabledModels from pi's user settings, or nil if absent."
+  (let ((file (expand-file-name
+               "settings.json" (or (getenv "PI_CODING_AGENT_DIR") "~/.pi/agent/"))))
+    (when (file-readable-p file)
+      (condition-case err
+          (with-temp-buffer
+            (insert-file-contents file)
+            (plist-get (json-parse-buffer :object-type 'plist :array-type 'list)
+                       :enabledModels))
+        (error (user-error "Cannot read pi settings %s: %s"
+                           file (error-message-string err)))))))
+
+(defun agent-tasks--read-model ()
+  "Read a pi model pattern with enabled-model completion; empty means default."
+  (let ((model (completing-read "Model (empty for pi default): "
+                                (agent-tasks--enabled-models))))
+    (unless (string-empty-p model) model)))
+
+(defun agent-tasks-new (name repo prompt &optional base model)
+  "Spawn task NAME in REPO with PROMPT, branching from BASE using MODEL.
+Interactively, complete MODEL from pi's enabled models (empty means default)
+and ask for BASE only with a prefix argument."
   (interactive
    (list (read-string "Task name: ")
          (agent-tasks--read-repo)
          (read-string "Prompt: ")
-         (when current-prefix-arg (read-string "Base branch: "))))
+         (when current-prefix-arg (read-string "Base branch: "))
+         (agent-tasks--read-model)))
   (let ((result (agent-tasks-spawn :name name :prompt prompt :repo repo
                                    :base (and base (not (string-empty-p base)) base)
+                                   :model model
                                    :cwd default-directory)))
     (agent-tasks--refresh-dashboard)
     (message "agent-tasks: spawned %s in %s from %s%s"

@@ -30,12 +30,15 @@ export default function (pi: ExtensionAPI) {
 				"- repo: omit for the current repository. Otherwise a project name such as",
 				"  'tmd' or an absolute path.",
 				"- base: omit unless the user named a branch to start from (default main).",
+				"- model: set only when the user asks for a specific model. A pi model pattern",
+				"  (provider/id, optionally :<thinking>); omit for pi's default model.",
 			].join("\n"),
 			parameters: Type.Object({
 				name: Type.String({ description: "Short kebab-case task name, e.g. fix-login-timeout" }),
 				prompt: Type.String({ description: "Self-contained instructions for the new session" }),
 				repo: Type.Optional(Type.String({ description: "Project name or absolute path; omit for current repo" })),
 				base: Type.Optional(Type.String({ description: "Branch to start from; omit unless the user named one" })),
+				model: Type.Optional(Type.String({ description: "Pi model pattern, optionally :<thinking>; set only when the user asks for a specific model" })),
 			}),
 
 			async execute(_toolCallId, params, signal, _onUpdate, ctx) {

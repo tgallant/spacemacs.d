@@ -11,6 +11,7 @@ export type Spawned = {
 	branch: string;
 	base: string;
 	baseFellBack: boolean;
+	model?: string;
 };
 
 export type Failed = { ok: false; error: string };
@@ -59,6 +60,7 @@ export function parseReply(code: number, stdout: string, stderr: string): Reply 
 		branch: String(r.branch),
 		base: String(r.base),
 		baseFellBack: r.baseFellBack === true,
+		...(typeof r.model === "string" ? { model: r.model } : {}),
 	};
 }
 
@@ -70,5 +72,6 @@ export function formatSpawned(s: Spawned): string {
 		`Layout: ${s.layout}`,
 		`Worktree: ${s.worktree}`,
 		`Branch: ${s.branch} from ${s.base}${fallback}`,
+		...(s.model ? [`Model: ${s.model}`] : []),
 	].join("\n");
 }

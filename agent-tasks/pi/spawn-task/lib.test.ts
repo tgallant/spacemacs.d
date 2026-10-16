@@ -25,6 +25,23 @@ test("parseReply decodes the lisp-printed JSON of a spawned task", () => {
 	});
 });
 
+test("parseReply retains an explicitly requested model", () => {
+	const model = "openai-codex/gpt-6.1-sol:high";
+	const reply = parseReply(0, JSON.stringify(JSON.stringify({
+		task: "feat", layout: "feat", worktree: "/r-feat/", branch: "feat",
+		base: "main", baseFellBack: false, model,
+	})), "");
+	assert.equal(reply.ok && reply.model, model);
+	if (reply.ok) assert.match(formatSpawned(reply), /Model: openai-codex\/gpt-6\.1-sol:high/);
+});
+
+test("formatSpawned omits model when using pi's default", () => {
+	assert.doesNotMatch(formatSpawned({
+		ok: true, task: "feat", layout: "feat", worktree: "/r-feat/",
+		branch: "feat", base: "main", baseFellBack: false,
+	}), /Model:/);
+});
+
 test("parseReply returns the error of an error reply", () => {
 	const stdout = '"{\\"error\\":\\"Ambiguous repo tmd; candidates: ~/a/tmd/, ~/b/tmd/\\"}"\n';
 	assert.deepEqual(parseReply(0, stdout, ""), {

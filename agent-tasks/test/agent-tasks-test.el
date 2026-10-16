@@ -277,7 +277,7 @@
            (layouts-before (persp-names-current-frame-fast-ordered))
            (fake-chats nil))
        (cl-letf (((symbol-function 'agent-tasks--pilish-start)
-                  (lambda (dir)
+                  (lambda (dir &optional _model)
                     (car (push (agent-tasks-test--fake-session dir) fake-chats))))
                  ((symbol-function 'agent-tasks--pilish-input)
                   (lambda (chat) (buffer-local-value 'agent-tasks-test--input chat)))
@@ -710,32 +710,32 @@ PLIST overrides task slots; pass :chat-buffer nil for no session."
              (entries (agent-tasks--entries)))
         ;; A task's branch is its name, so only its base is shown.
         (should (equal (agent-tasks-test--row entries "feat")
-                       '("feat" "working" "proj" "from main" "<1m" "Default")))
+                       '("feat" "working" "proj" "from main" "default" "<1m" "Default")))
         (should (equal (nth 1 (agent-tasks-test--row entries "old"))
                        "dormant (interrupted)"))
         ;; Untracked sessions: no age or parent; repo comes from git.
         (should (equal (agent-tasks-test--row entries untracked)
-                       (list (abbreviate-file-name repo) "idle" "proj" "main" "" "")))
+                       (list (abbreviate-file-name repo) "idle" "proj" "main" "" "" "")))
         (should (equal (agent-tasks-test--row entries in-worktree)
-                       (list (abbreviate-file-name side-wt) "idle" "proj" "side" "" "")))
+                       (list (abbreviate-file-name side-wt) "idle" "proj" "side" "" "" "")))
         (should (equal (agent-tasks-test--row entries outside-git)
-                       (list (abbreviate-file-name plain-dir) "idle" "" "" "" "")))
+                       (list (abbreviate-file-name plain-dir) "idle" "" "" "" "" "")))
         (should (= (length entries) 5))))))
 
 (ert-deftest agent-tasks-column-widths-fit-content ()
   (let ((entries (list (list "a" (vector "task-model-selection" "working" ".spacemacs.d"
-                                         "from master" "6m" ""))
+                                         "from master" "default" "6m" ""))
                        (list "b" (vector "~/src/cmt/" "dormant (interrupted)" "cmt"
-                                         "fix/search-relevance" "" "Default")))))
+                                         "fix/search-relevance" "" "" "Default")))))
     ;; Each column is as wide as its widest cell or header.
     (should (equal (agent-tasks--column-widths entries 200)
-                   '(20 21 12 20 3 7)))
+                   '(20 21 12 20 7 3 7)))
     ;; Too narrow: the Task column gives way first, never below its header.
-    ;; A row is 1 padding + columns + 5 separators, and 1 column stays free.
-    (should (equal (agent-tasks--column-widths entries 80)
-                   '(10 21 12 20 3 7)))
+    ;; A row is 1 padding + columns + 6 separators, and 1 column stays free.
+    (should (equal (agent-tasks--column-widths entries 90)
+                   '(12 21 12 20 7 3 7)))
     (should (equal (agent-tasks--column-widths entries 10)
-                   '(4 21 12 20 3 7)))))
+                   '(4 21 12 20 7 3 7)))))
 
 (ert-deftest agent-tasks-dashboard-shows-every-cell-in-full ()
   (agent-tasks-test--with-status-env tmp
@@ -747,7 +747,7 @@ PLIST overrides task slots; pass :chat-buffer nil for no session."
       (with-temp-buffer
         (agent-tasks-list-mode)
         (agent-tasks--print)
-        (should (string-match-p "task-model-selection +idle +proj +from master +<1m"
+        (should (string-match-p "task-model-selection +idle +proj +from master +default +<1m"
                                 (buffer-string)))
         (should-not (string-match-p "\\.\\.\\.\\|\u2026" (buffer-string)))))))
 
@@ -807,7 +807,7 @@ PLIST overrides task slots; pass :chat-buffer nil for no session."
            (resumed nil))
       (with-temp-file file (insert "{}\n"))
       (cl-letf (((symbol-function 'agent-tasks--pilish-resume)
-                 (lambda (file)
+                 (lambda (file &optional _model)
                    (push file resumed)
                    (agent-tasks--pilish-start tmp))))
         (agent-tasks--resume task))
@@ -829,6 +829,240 @@ PLIST overrides task slots; pass :chat-buffer nil for no session."
         (agent-tasks--resume task))
       (should (agent-tasks--live-p task))
       (should-not agent-tasks-test--sent))))
+
+;;;; Model selection
+
+(ert-deftest agent-tasks-model-spawn-json-and-persistence ()
+  (agent-tasks-test--with-spawn-env tmp
+    (let* ((repo (agent-tasks-test--make-repo tmp "r"))
+           (file (expand-file-name "request.json" tmp))
+           (model "openai-codex/gpt-6.1-sol:high")
+           (started nil))
+      (cl-letf (((symbol-function 'agent-tasks--pilish-start)
+                 (lambda (dir &optional model)
+                   (push model started)
+                   (car (push (agent-tasks-test--fake-session dir) fake-chats)))))
+        (with-temp-file file
+          (insert (json-serialize (list :name "pinned" :prompt "p" :cwd repo
+                                       :model model))))
+        (let ((reply (json-parse-string (agent-tasks-spawn-from-file file)
+                                        :object-type 'plist)))
+          (should-not (plist-get reply :error))
+          (should (equal (plist-get reply :model) model)))
+        (should (equal started (list model)))
+        (should (equal (plist-get (agent-tasks--task-to-plist
+                                   (car (agent-tasks--load))) :model) model))
+        (let ((reply (agent-tasks-spawn :name "default" :prompt "p" :cwd repo)))
+          (should-not (plist-member reply :model)))
+        (should-not (car started))))))
+
+(ert-deftest agent-tasks-model-old-state-defaults-to-nil ()
+  (should-not (agent-tasks-task-model
+               (agent-tasks--task-from-plist '(:name "old")))))
+
+(ert-deftest agent-tasks-model-error-reaches-json-caller ()
+  (agent-tasks-test--with-spawn-env tmp
+    (let ((repo (agent-tasks-test--make-repo tmp "r"))
+          (file (expand-file-name "req.json" tmp)))
+      (with-temp-file file
+        (insert (json-serialize (list :name "bad" :prompt "p" :cwd repo
+                                     :model "unknown/model"))))
+      (cl-letf (((symbol-function 'agent-tasks--pilish-start)
+                 (lambda (_dir &optional model)
+                   (error "Unknown or unavailable pi model: %s" model))))
+        (let ((reply (json-parse-string (agent-tasks-spawn-from-file file)
+                                        :object-type 'plist)))
+          (should (string-match-p "Unknown or unavailable pi model: unknown/model"
+                                  (plist-get reply :error)))))
+      (should-not (gethash "bad" agent-tasks--tasks))
+      (should-not agent-tasks-test--sent))))
+
+(ert-deftest agent-tasks-model-resume-forwards-persisted-pattern ()
+  (agent-tasks-test--with-spawn-env tmp
+    (let* ((file (expand-file-name "old.jsonl" tmp))
+           (model "claude-bridge/claude-opus-5-5:high")
+           (task (agent-tasks-test--register "old" tmp :chat-buffer nil
+                                             :session-file file :model model))
+           (calls nil))
+      (with-temp-file file (insert "{}\n"))
+      (cl-letf (((symbol-function 'agent-tasks--pilish-resume)
+                 (lambda (file &optional model)
+                   (push (list 'resume file model) calls)
+                   (car (push (agent-tasks-test--fake-session tmp) fake-chats))))
+                ((symbol-function 'agent-tasks--pilish-start)
+                 (lambda (dir &optional model)
+                   (push (list 'start dir model) calls)
+                   (car (push (agent-tasks-test--fake-session dir) fake-chats)))))
+        (agent-tasks--resume task)
+        (should (equal (car calls) (list 'resume file model)))
+        (delete-file file)
+        (agent-tasks--resume task)
+        (should (equal (car calls) (list 'start tmp model)))))))
+
+(ert-deftest agent-tasks-model-dashboard-column ()
+  (agent-tasks-test--with-status-env tmp
+    (agent-tasks-test--register "pinned" tmp :repo tmp
+                                :model "claude-bridge/claude-opus-5-5:high")
+    (agent-tasks-test--register "default" tmp :repo tmp)
+    (let ((chat (agent-tasks--pilish-start tmp)))
+      (should (equal (nth 4 (agent-tasks-test--row (agent-tasks--entries) "pinned"))
+                     "claude-bridge/claude-opus-5-5:high"))
+      (should (equal (nth 4 (agent-tasks-test--row (agent-tasks--entries) "default"))
+                     "default"))
+      (should (equal (nth 4 (agent-tasks-test--row (agent-tasks--entries) chat)) "")))
+    (with-temp-buffer
+      (agent-tasks-list-mode)
+      (should (equal (car (aref tabulated-list-format 4)) "Model")))))
+
+(ert-deftest agent-tasks-model-completion-settings ()
+  (agent-tasks-test--with-sandbox tmp
+    (let ((process-environment (copy-sequence process-environment))
+          (models '("claude-bridge/claude-opus-5-5" "openai-codex/gpt-6.1-sol")))
+      (setenv "PI_CODING_AGENT_DIR" tmp)
+      (should-not (agent-tasks--enabled-models))
+      (with-temp-file (expand-file-name "settings.json" tmp)
+        (insert (json-serialize (list :enabledModels (vconcat models)))))
+      (should (equal (agent-tasks--enabled-models) models))
+      (cl-letf (((symbol-function 'completing-read)
+                 (lambda (_prompt candidates &rest _)
+                   (should (equal candidates models))
+                   "")))
+        (should-not (agent-tasks--read-model)))
+      (cl-letf (((symbol-function 'completing-read)
+                 (lambda (&rest _) "openai-codex/gpt-6.1-sol:high")))
+        (should (equal (agent-tasks--read-model) "openai-codex/gpt-6.1-sol:high")))
+      (with-temp-file (expand-file-name "settings.json" tmp) (insert "{"))
+      (should (string-match-p "settings.json"
+                              (agent-tasks-test--error-message
+                               #'agent-tasks--enabled-models)))
+      (setenv "PI_CODING_AGENT_DIR" nil)
+      (setenv "HOME" tmp)
+      (make-directory (expand-file-name ".pi/agent" tmp) t)
+      (with-temp-file (expand-file-name ".pi/agent/settings.json" tmp)
+        (insert (json-serialize (list :enabledModels (vconcat models)))))
+      (should (equal (agent-tasks--enabled-models) models)))))
+
+(ert-deftest agent-tasks-model-new-interactive-forwards-selection ()
+  (let ((received nil))
+    (cl-letf (((symbol-function 'read-string) (lambda (&rest _) "text"))
+              ((symbol-function 'agent-tasks--read-repo) (lambda () "/repo/"))
+              ((symbol-function 'agent-tasks--read-model) (lambda () "opus:high"))
+              ((symbol-function 'agent-tasks--refresh-dashboard) #'ignore)
+              ((symbol-function 'agent-tasks-spawn)
+               (lambda (&rest args)
+                 (setq received args)
+                 '(:worktree "/wt/" :base "main"))))
+      (let ((current-prefix-arg nil)) (call-interactively #'agent-tasks-new))
+      (should (equal (plist-get received :model) "opus:high")))))
+
+;; Exercise the real adapter without loading or launching pilish.
+(defvar pilish-extra-args nil)
+(defmacro agent-tasks-test--with-pilish-primitives (&rest body)
+  (declare (indent 0))
+  `(let* ((pilish-extra-args '("--offline"))
+          (chat (generate-new-buffer " *adapter-chat*"))
+          (input (generate-new-buffer " *adapter-input*"))
+          (argv nil) (history nil) (killed nil)
+          (selected '(:provider "provider" :id "chosen"))
+          (available [(:provider "provider" :id "chosen")])
+          (failure nil))
+     (with-current-buffer chat (setq-local pilish--process nil))
+     (cl-letf (((symbol-function 'require)
+                (lambda (feature &rest _)
+                  (should (eq feature 'pilish)) t))
+               ((symbol-function 'pilish--find-session) (lambda (&rest _) nil))
+               ((symbol-function 'pilish--setup-session)
+                (lambda (_dir) (setq argv pilish-extra-args) chat))
+               ((symbol-function 'pilish--rpc-sync)
+                (lambda (_proc command &optional _timeout)
+                  (or failure
+                      (list :success t :data
+                            (if (equal (plist-get command :type) "get_state")
+                                (list :model selected :sessionFile "/session.jsonl")
+                              (list :models available))))))
+               ((symbol-function 'pilish--apply-state-response)
+                (lambda (buf response)
+                  (with-current-buffer buf
+                    (setq-local pilish--state (plist-get response :data)))))
+               ((symbol-function 'pilish--session-file-cwd-or-error)
+                (lambda (file) (file-name-directory file)))
+               ((symbol-function 'pilish--load-session-history)
+                (lambda (_proc _callback buf &rest _) (push buf history)))
+               ((symbol-function 'agent-tasks--pilish-kill)
+                (lambda (buf) (push buf killed)))
+               ((symbol-function 'agent-tasks--pilish-input) (lambda (_) input)))
+       (unwind-protect (progn ,@body)
+         (kill-buffer chat)
+         (kill-buffer input)))))
+
+(ert-deftest agent-tasks-model-adapter-session-local-args ()
+  (agent-tasks-test--with-pilish-primitives
+    (should (eq (agent-tasks--pilish-start "/tmp/" "provider/chosen:high") chat))
+    (should (equal argv '("--offline" "--model" "provider/chosen:high")))
+    (should (equal pilish-extra-args '("--offline")))
+    (should (equal (plist-get (buffer-local-value 'pilish--state chat) :model)
+                   selected))
+    (should-not killed)))
+
+(ert-deftest agent-tasks-model-adapter-default-unchanged ()
+  (agent-tasks-test--with-pilish-primitives
+    (setq failure '(:success :false :error "must not validate default"))
+    (should (eq (agent-tasks--pilish-start "/tmp/") chat))
+    (should (equal argv '("--offline")))
+    (should-not killed)))
+
+(ert-deftest agent-tasks-model-adapter-rejects-custom-fallback ()
+  (agent-tasks-test--with-pilish-primitives
+    (setq selected '(:provider "provider" :id "typo"))
+    (should (string-match-p "Unknown or unavailable pi model.*provider/typo"
+                            (agent-tasks-test--error-message
+                             (lambda ()
+                               (agent-tasks--pilish-start "/tmp/" "provider/typo")))))
+    (should (equal killed (list chat)))))
+
+(ert-deftest agent-tasks-model-adapter-rpc-errors-and-timeouts ()
+  (agent-tasks-test--with-pilish-primitives
+    (setq failure '(:success :false :error "Model not found"))
+    (should (string-match-p "provider/nope.*Model not found"
+                            (agent-tasks-test--error-message
+                             (lambda ()
+                               (agent-tasks--pilish-start "/tmp/" "provider/nope")))))
+    (cl-letf (((symbol-function 'pilish--rpc-sync) (lambda (&rest _) nil)))
+      (should (string-match-p "provider/chosen.*timed out"
+                              (agent-tasks-test--error-message
+                               (lambda ()
+                                 (agent-tasks--pilish-start "/tmp/" "provider/chosen"))))))
+    (should (= (length killed) 2))))
+
+(ert-deftest agent-tasks-model-adapter-refuses-to-reuse-live-session ()
+  (agent-tasks-test--with-pilish-primitives
+    (cl-letf (((symbol-function 'pilish--find-session) (lambda (&rest _) chat))
+              ((symbol-function 'agent-tasks--pilish-process-live-p) (lambda (_) t)))
+      (should (string-match-p "provider/chosen.*session already running"
+                              (agent-tasks-test--error-message
+                               (lambda ()
+                                 (agent-tasks--pilish-start "/tmp/" "provider/chosen")))))
+      (should-not argv)
+      (should-not killed))))
+
+(ert-deftest agent-tasks-model-adapter-rejects-blank-pattern ()
+  (agent-tasks-test--with-pilish-primitives
+    (should (string-match-p "Invalid pi model"
+                            (agent-tasks-test--error-message
+                             (lambda () (agent-tasks--pilish-start "/tmp/" "")))))
+    (should-not argv)))
+
+(ert-deftest agent-tasks-model-adapter-pinned-resume-uses-cli-not-switch ()
+  (agent-tasks-test--with-pilish-primitives
+    (agent-tasks-test--with-sandbox tmp
+      (let ((file (expand-file-name "old.jsonl" tmp)))
+        (with-temp-file file
+          (insert (json-serialize (list :type "session" :cwd tmp)) "\n"))
+        (should (eq (agent-tasks--pilish-resume file "provider/chosen:high") chat))
+        (should (equal argv (list "--offline" "--session" file
+                                  "--model" "provider/chosen:high")))
+        (should (equal history (list chat)))
+        (should (equal pilish-extra-args '("--offline")))))))
 
 (provide 'agent-tasks-test)
 ;;; agent-tasks-test.el ends here
