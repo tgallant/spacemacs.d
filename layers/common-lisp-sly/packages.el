@@ -1,3 +1,4 @@
+;; -*- lexical-binding: t; -*-
 (defconst common-lisp-sly-packages
   '((common-lisp-snippets :requires yasnippet)
     xterm-color

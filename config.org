@@ -1,4 +1,7 @@
 * Emacs Configuration
+  #+begin_src emacs-lisp :comments no
+    ;;; config.el -*- lexical-binding: t; -*-
+  #+end_src
 ** General
 *** Set Window Size
 #+begin_src emacs-lisp
@@ -161,6 +164,22 @@ Save all ~.undo-tree~ files in ~~/.emacs.d/undo~.
         (projectile-switch-project-by-name (wt-dir wt))
         wt)
 
+      (defun switch-layout (name)
+        (persp-switch name)
+        name)
+
+      (defun start-pi (wt)
+        (pilish))
+
+      (defun my/new-worktree-session ()
+        (interactive)
+        (-> (read-string "New worktree name: ")
+            (switch-layout)
+            (create-worktree)
+            (switch-project)
+            (start-pi)))
+
+      (spacemacs/set-leader-keys "on" 'my/new-worktree-session)
     #+end_src
 *** agent tasks
 Spawn pilish sessions into their own worktree and layout, from Emacs or from
@@ -311,6 +330,20 @@ pi's =spawn_task= tool.  Source: =agent-tasks/= in this directory; run its
 
       (spacemacs/set-leader-keys-for-major-mode 'org-mode
         "iS" 'my/org-insert-emacs-lisp-src)
+    #+end_src
+*** archive all done todos
+    #+begin_src emacs-lisp
+      (defun handle-done-task ()
+        (org-archive-subtree-default)
+        (setq org-map-continue-from
+              (org-element-property :begin (org-element-at-point))))
+
+      (defun my/org-archive-done-tasks ()
+        (interactive)
+        (org-map-entries 'handle-done-task "LEVEL=2/DONE" 'file))
+
+      (spacemacs/set-leader-keys-for-major-mode 'org-mode
+        "A" 'my/org-archive-done-tasks)
     #+end_src
 ** Markdown
 *** Line wrapping
@@ -504,13 +537,14 @@ Match exact provider/model-id strings; leave other RPC responses unchanged."
     tag)
 
   (defun push-tag (tag)
-    (magit-git-push "origin" tag nil))
+    (magit-call-git "push" "origin" tag))
 
   (defun tag-and-push (prefix)
     (-> (tag-base prefix)
         (next-tag-version)
         (create-tag)
-        (push-tag)))
+        (push-tag))
+    (magit-refresh))
 
   (defun my/tag-and-push-dev ()
     (interactive)
@@ -520,13 +554,20 @@ Match exact provider/model-id strings; leave other RPC responses unchanged."
     (interactive)
     (tag-and-push "feature-stg"))
 
+  (defun my/tag-and-push-stg-eval ()
+    (interactive)
+    (tag-and-push "eval-stg"))
+
+  (defun my/tag-and-push-prod ()
+    (interactive)
+    (tag-and-push "bug-prod"))
+
   (spacemacs/declare-prefix "og" "git")
-
   (spacemacs/declare-prefix "ogt" "tags")
-
   (spacemacs/set-leader-keys "ogtd" 'my/tag-and-push-dev)
-
   (spacemacs/set-leader-keys "ogts" 'my/tag-and-push-stg)
+  (spacemacs/set-leader-keys "ogtp" 'my/tag-and-push-prod)
+  (spacemacs/set-leader-keys "ogte" 'my/tag-and-push-stg-eval)
 #+end_src
 *** repository dir
     #+begin_src emacs-lisp
@@ -551,6 +592,18 @@ Match exact provider/model-id strings; leave other RPC responses unchanged."
       (spacemacs/set-leader-keys "oss" 'my/info-scheme)
       (spacemacs/set-leader-keys "ose" 'my/info-emacs)
     #+end_src
+*** display ansi colors
+    #+begin_src emacs-lisp
+      (setq magit-process-apply-ansi-colors t)
+    #+end_src
+*** diff against origin/main
+    #+begin_src emacs-lisp
+      (defun my/diff-against-main ()
+        (interactive)
+        (magit-diff-setup-buffer "origin/main" nil '("--stat") nil))
+
+      (spacemacs/set-leader-keys "ogd" 'my/diff-against-main)
+    #+end_src
 ** Lisp
 *** set inferior lisp
     #+begin_src emacs-lisp
@@ -565,7 +618,7 @@ Match exact provider/model-id strings; leave other RPC responses unchanged."
 
       (setq sly-default-lisp 'ciel)
 
-      (load (expand-file-name "~/quicklisp/slime-helper.el"))
+      ;; (load (expand-file-name "~/quicklisp/slime-helper.el"))
     #+end_src
 ** Scheme
 *** sxml-match formatting

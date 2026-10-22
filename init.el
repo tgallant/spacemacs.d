@@ -32,7 +32,7 @@ This function should only modify configuration layer settings."
 
    ;; List of configuration layers to load.
    dotspacemacs-configuration-layers
-   '(
+   '(csv
      ;; ----------------------------------------------------------------
      ;; Example of useful layers you may want to use right away.
      ;; Uncomment some layer names and press `SPC f e R' (Vim style) or
@@ -314,7 +314,7 @@ It should only modify the values of Spacemacs settings."
 
    ;; If non-nil then the last auto saved layouts are resumed automatically upon
    ;; start. (default nil)
-   dotspacemacs-auto-resume-layouts nil
+   dotspacemacs-auto-resume-layouts t
 
    ;; If non-nil, auto-generate layout name when creating new layouts. Only has
    ;; effect when using the "jump to layout by number" commands. (default nil)
@@ -580,8 +580,6 @@ before packages are loaded."
 
   )
 
-;; Do not write anything past this comment. This is where Emacs will
-;; auto-generate custom variable definitions.
 (defun dotspacemacs/emacs-custom-settings ()
   "Emacs custom settings.
 This is an auto-generated function, do not modify its content directly, use
@@ -607,16 +605,12 @@ This function is called at the very end of Spacemacs initialization."
        "285d1bf306091644fb49993341e0ad8bafe57130d9981b680c1dbd974475c5c7" default))
    '(evil-want-Y-yank-to-eol t)
    '(flycheck-python-flake8-executable "python")
-   '(gptel-default-mode 'markdown-mode t)
-   '(gptel-model 'gemma3)
-   '(gptel-prompt-prefix-alist
-     '((markdown-mode . "**Prompt**") (org-mode . "*Prompt* ") (text-mode . "### ")))
-   '(gptel-response-prefix-alist
-     '((markdown-mode . "") (org-mode . "*Response*\\n\\n") (text-mode . "")))
-   '(helm-ag-base-command "rg --vimgrep --no-heading --smart-case" t)
+   '(helm-ag-base-command "rg --vimgrep --no-heading --smart-case")
+   '(ignored-local-variable-values
+     '((checkdoc-allow-quoting-nil-and-t . t) (js2-basic-offset . 2)))
    '(lsp-diagnostics-provider :none)
    '(package-selected-packages
-     '(ac-ispell ace-jump-helm-line ace-link ace-window acme-theme adaptive-wrap
+     '(ac-ispell ace-jump-helm-line ace-link ace-window adaptive-wrap
                  add-node-modules-path afternoon-theme aggressive-indent alchemist
                  alect-themes alert ample-theme ample-zen-theme anti-zenburn-theme
                  anzu apropospriate-theme async auto-compile auto-complete
@@ -627,16 +621,15 @@ This function is called at the very end of Spacemacs initialization."
                  color-theme-sanityinc-solarized color-theme-sanityinc-tomorrow
                  column-enforce-mode common-lisp-snippets company
                  company-c-headers company-go company-restclient
-                 company-statistics company-tern company-web compat
-                 compleseus-spacemacs-help cond-let consult consult-lsp
-                 consult-yasnippet copilot csv-mode cyberpunk-theme dakrone-theme
-                 dap-mode darkburn-theme darkmine-theme darkokai-theme
-                 darktooth-theme dash dash-functional define-word diminish
-                 django-theme docker docker-tramp dockerfile-mode doom-modeline
-                 doom-themes dracula-theme dumb-jump edit-indirect elisp-slime-nav
-                 elixir-mode ellama embark emmet-mode epl erlang esh-help
-                 eshell-prompt-extras eshell-z espresso-theme eval-sexp-fu evil
-                 evil-anzu evil-args evil-ediff evil-escape evil-exchange
+                 company-statistics company-tern company-web compat copilot
+                 cpp-auto-include csv-mode cyberpunk-theme dakrone-theme dap-mode
+                 darkburn-theme darkmine-theme darkokai-theme darktooth-theme dash
+                 dash-functional define-word diminish disaster django-theme docker
+                 docker-tramp dockerfile-mode doom-modeline doom-themes
+                 dracula-theme dumb-jump edit-indirect elisp-slime-nav elixir-mode
+                 ellama emmet-mode epl erlang esh-help eshell-prompt-extras
+                 eshell-z espresso-theme eval-sexp-fu evil evil-anzu evil-args
+                 evil-ediff evil-escape evil-exchange evil-ghostel
                  evil-iedit-state evil-indent-plus evil-lisp-state evil-magit
                  evil-matchit evil-mc evil-nerd-commenter evil-numbers
                  evil-search-highlight-persist evil-surround evil-tutor
@@ -645,47 +638,47 @@ This function is called at the very end of Spacemacs initialization."
                  eziam-theme f fancy-battery farmhouse-theme fill-column-indicator
                  flatland-theme flatui-theme flx flx-ido flycheck flycheck-credo
                  flycheck-elsa flycheck-haskell flycheck-mix flycheck-package
-                 flycheck-pos-tip flycheck-rust fuzzy gandalf-theme geiser
-                 geiser-chez geiser-guile gh gh-md ghub gist git-commit git-link
-                 git-messenger git-timemachine gitattributes-mode gitconfig-mode
+                 flycheck-pos-tip flycheck-rust fuzzy gandalf-theme geiser gendoxy
+                 gh gh-md ghub gist git-commit git-link git-messenger
+                 git-timemachine gitattributes-mode gitconfig-mode
                  github-browse-file github-clone github-search gitignore-mode gntp
-                 gnuplot go-eldoc go-guru go-mode golden-ratio google-translate
-                 gotham-theme goto-chg gptel grandshell-theme graphviz-dot-mode
-                 grizzl groovy-mode gruber-darker-theme gruvbox-theme haml-mode
-                 hc-zenburn-theme helm helm-ag helm-c-yasnippet helm-company
-                 helm-core helm-css-scss helm-descbinds helm-flx helm-gitignore
-                 helm-lsp helm-make helm-mode-manager helm-projectile helm-swoop
-                 helm-themes help-fns+ hemisu-theme heroku-theme hide-comnt
-                 highlight highlight-indentation highlight-numbers
-                 highlight-parentheses hl-todo ht htmlize hungry-delete hydra
-                 iedit import-js indent-guide info+ inkpot-theme ir-black-theme
-                 jazz-theme jbeans-theme js-doc js2-mode js2-refactor json-mode
-                 json-reformat json-snatcher kaolin-themes know-your-http-well
-                 kubernetes kubernetes-evil kubernetes-tramp less-css-mode
-                 light-soap-theme link-hint linum-relative livid-mode log4e logito
-                 lorem-ipsum lsp-java lsp-mode lsp-origami lsp-pyright
-                 lsp-python-ms lsp-treemacs lsp-ui lua-mode lush-theme lv
-                 macrostep madhat2r-theme magit magit-gh-pulls magit-gitflow
-                 magit-popup majapahit-theme marginalia markdown-mode
-                 markdown-table-wrap markdown-toc marshal material-theme
-                 maven-test-mode md-ts-mode minimal-theme mmm-mode
+                 gnuplot go-eldoc go-guru go-mode golden-ratio google-c-style
+                 google-translate gotham-theme goto-chg gptel grandshell-theme
+                 graphviz-dot-mode grizzl groovy-mode gruber-darker-theme
+                 gruvbox-theme haml-mode hc-zenburn-theme helm helm-ag
+                 helm-c-yasnippet helm-company helm-core helm-css-scss
+                 helm-descbinds helm-flx helm-gitignore helm-lsp helm-make
+                 helm-mode-manager helm-projectile helm-swoop helm-themes
+                 help-fns+ hemisu-theme heroku-theme hide-comnt highlight
+                 highlight-indentation highlight-numbers highlight-parentheses
+                 hl-todo ht htmlize hungry-delete hydra iedit import-js
+                 indent-guide info+ inkpot-theme ir-black-theme jazz-theme
+                 jbeans-theme js-doc js2-mode js2-refactor json-mode json-reformat
+                 json-snatcher kaolin-themes know-your-http-well kubernetes
+                 kubernetes-evil kubernetes-tramp less-css-mode light-soap-theme
+                 link-hint linum-relative livid-mode log4e logito lorem-ipsum
+                 lsp-java lsp-mode lsp-origami lsp-pyright lsp-python-ms
+                 lsp-treemacs lsp-ui lush-theme lv macrostep madhat2r-theme magit
+                 magit-gh-pulls magit-gitflow magit-popup majapahit-theme
+                 markdown-mode markdown-table-wrap markdown-toc marshal
+                 material-theme maven-test-mode md-ts-mode minimal-theme mmm-mode
                  modus-operandi-theme modus-themes modus-vivendi-theme moe-theme
                  molokai-theme monochrome-theme move-text multi-term
                  multiple-cursors mustang-theme mvn mwim naquadah-theme neotree
-                 nerd-icons nginx-mode noctilux-theme ob-elixir ob-http
-                 ob-restclient obsidian-theme occidental-theme oldlace-theme
-                 omtose-phellack-theme open-junk-file orderless org-bullets
+                 nerd-icons noctilux-theme ob-elixir ob-http ob-restclient
+                 obsidian-theme occidental-theme oldlace-theme
+                 omtose-phellack-theme open-junk-file org-bullets
                  org-category-capture org-download org-mime org-plus-contrib
                  org-pomodoro org-present org-projectile organic-green-theme orgit
                  origami ox-gfm package-lint packed paradox parent-mode pcache
-                 pcre2el persp-mode pet phoenix-dark-mono-theme
-                 phoenix-dark-pink-theme pi-coding-agent pkg-info planet-theme plz
-                 plz-media-type popup popwin pos-tip powerline professional-theme
-                 projectile pug-mode purple-haze-theme racer railscasts-theme
-                 rainbow-delimiters rebecca-theme request restart-emacs restclient
-                 restclient-helm reverse-theme ron-mode rust-mode s sass-mode
-                 scss-mode seti-theme shell-pop shrink-path simple-httpd
-                 skewer-mode slim-mode slime slime-company sly sly-macrostep
+                 pcre2el persp-mode phoenix-dark-mono-theme
+                 phoenix-dark-pink-theme pi-coding-agent pilish pkg-info
+                 planet-theme plz plz-media-type popup popwin pos-tip powerline
+                 professional-theme projectile pug-mode purple-haze-theme racer
+                 railscasts-theme rainbow-delimiters rebecca-theme request
+                 restart-emacs restclient restclient-helm reverse-theme ron-mode
+                 rust-mode s sass-mode scss-mode seti-theme shell-pop shrink-path
+                 simple-httpd skewer-mode slim-mode slime slime-company sly
                  sly-repl-ansi-color smartparens smeargle smyx-theme
                  soft-charcoal-theme soft-morning-theme soft-stone-theme
                  soothe-theme spacegray-theme spaceline spinner sqlite3 ssass-mode
@@ -694,9 +687,9 @@ This function is called at the very end of Spacemacs initialization."
                  tao-theme tern toc-org toml-mode toxi-theme transient
                  twilight-anti-bright-theme twilight-bright-theme twilight-theme
                  typescript-mode ujelly-theme underwater-theme undo-tree unfill
-                 use-package uuidgen vertico vi-tilde-fringe volatile-highlights
+                 use-package uuidgen vi-tilde-fringe volatile-highlights
                  vue-html-mode vue-mode web-beautify web-completion-data web-mode
-                 which-key white-sand-theme winum with-editor ws-butler xref
+                 which-key white-sand-theme winum with-editor ws-butler
                  xterm-color yaml-mode yasnippet zen-and-art-theme))
    '(safe-local-variable-values
      '((git-commit-major-mode . git-commit-elisp-text-mode)
@@ -707,5 +700,5 @@ This function is called at the very end of Spacemacs initialization."
    ;; Your init file should contain only one such instance.
    ;; If there is more than one, they won't work right.
    '(default ((t (:background nil))))
-   '(highlight-parentheses-highlight ((nil (:weight ultra-bold))) t))
+   '(highlight-parentheses-highlight ((nil (:weight ultra-bold)))))
   )
